@@ -32,12 +32,13 @@ export default function LoginPage() {
         redirect: false,
       });
 
-      if (result?.error) {
+      if (!result?.ok) {
         setError("E-Mail oder Passwort ungültig");
         setLoading(false);
         return;
       }
 
+      router.refresh();
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
