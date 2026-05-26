@@ -1,8 +1,7 @@
 "use client";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { signOut } from "next-auth/react";
 
 export default function DashboardLayout({
   children,
@@ -12,7 +11,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   const handleLogout = async () => {
-    await authClient.signOut();
+    await signOut({ redirect: false });
     router.push("/");
   };
 
@@ -25,17 +24,13 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#fffdf8] flex">
-      {/* Sidebar */}
       <aside className="w-56 bg-[#fef9ee] border-r border-[#FAC775] flex flex-col">
-        {/* Logo */}
         <div className="px-6 py-6 border-b border-[#FAC775]">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition">
             <div className="w-5 h-5 bg-[#BA7517] rounded-[4px]" />
             <span className="text-sm font-medium text-[#412402]">pushlog</span>
           </Link>
         </div>
-
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-6 space-y-1">
           {navItems.map((item) => (
             <Link
@@ -47,8 +42,6 @@ export default function DashboardLayout({
             </Link>
           ))}
         </nav>
-
-        {/* Logout */}
         <div className="px-6 py-6 border-t border-[#FAC775]">
           <button
             onClick={handleLogout}
@@ -58,8 +51,6 @@ export default function DashboardLayout({
           </button>
         </div>
       </aside>
-
-      {/* Main Content */}
       <main className="flex-1 overflow-auto">
         {children}
       </main>
