@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply border-slate-200;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+@supports (font-variation-settings: normal) {
+  html {
+    font-family: "Inter var";
+  }
+}
