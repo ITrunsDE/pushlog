@@ -1,4 +1,4 @@
-# ShipLog
+# Pushlog
 
 A changelog tool for indie hackers and solo developers.
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShipLog",
+  title: "Pushlog",
   description: "A changelog tool for indie hackers and solo developers",
 };
 
