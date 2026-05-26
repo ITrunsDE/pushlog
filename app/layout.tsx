@@ -4,12 +4,14 @@ import { Playfair_Display, DM_Sans } from "next/font/google";
 
 const playfair = Playfair_Display({ 
   subsets: ["latin"],
-  variable: "--font-display" 
+  variable: "--font-display",
+  display: "block" 
 });
 
 const dmSans = DM_Sans({ 
   subsets: ["latin"],
-  variable: "--font-sans" 
+  variable: "--font-sans",
+  display: "block" 
 });
 export const metadata: Metadata = {
   title: "Pushlog",
