@@ -27,3 +27,6 @@ package-lock.json
 
 # Prisma
 /prisma/migrations/
+
+# Local development
+deploy.sh
