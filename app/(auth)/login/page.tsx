@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,13 +26,14 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await authClient.signIn.email({
+      const result = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
+        redirect: false,
       });
 
-      if (response.error) {
-        setError(response.error.message || "Login fehlgeschlagen");
+      if (result?.error) {
+        setError("E-Mail oder Passwort ungültig");
         setLoading(false);
         return;
       }

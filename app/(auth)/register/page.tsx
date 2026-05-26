@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,14 +27,31 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const response = await authClient.signUp.email({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
       });
 
-      if (response.error) {
-        setError(response.error.message || "Registrierung fehlgeschlagen");
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "Registrierung fehlgeschlagen");
+        setLoading(false);
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(result.error);
         setLoading(false);
         return;
       }

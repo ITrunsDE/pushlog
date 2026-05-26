@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Playfair_Display, DM_Sans } from "next/font/google";
+import { Providers } from "./providers";
 
-const playfair = Playfair_Display({ 
+const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-display",
-  display: "block" 
+  display: "block"
 });
 
-const dmSans = DM_Sans({ 
+const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
-  display: "block" 
+  display: "block"
 });
 export const metadata: Metadata = {
   title: "Pushlog",
@@ -25,7 +26,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${dmSans.variable}`}>{children}</body>
+      <body className={`${playfair.variable} ${dmSans.variable}`}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
