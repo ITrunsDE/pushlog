@@ -17,7 +17,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Custom ShipLog fields
+  // Custom Pushlog fields
   plan              String    @default("free")
   stripeCustomerId  String?
 
@@ -77,7 +77,7 @@ model Verification {
   @@map("verification")
 }
 
-// ShipLog Models
+// Pushlog Models
 model Product {
   id          String    @id @default(cuid())
   userId      String
