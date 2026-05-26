@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,78 +7,94 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Better Auth Models
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  name            String?
-  plan            String    @default("free") // free, pro, enterprise
-  stripeCustomerId String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  products Product[]
-  accounts Account[]
-  sessions Session[]
+  // Custom ShipLog fields
+  plan              String    @default("free")
+  stripeCustomerId  String?
 
-  @@map("users")
+  accounts  Account[]
+  sessions  Session[]
+  products  Product[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  expiresAt DateTime
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
+  id                 String    @id @default(cuid())
   userId             String
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
+  refreshToken       String?
+  accessToken        String?
+  expiresAt          DateTime?
+  tokenType          String?
   scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  idToken            String?
+  sessionState       String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@map("accounts")
+  @@map("account")
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  sessionToken String @unique
-  userId    String
-  expires   DateTime
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
+model Verification {
+  id        String    @id @default(cuid())
   identifier String
-  token      String   @unique
-  expires    DateTime
+  value     String?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  @@unique([identifier, token])
-  @@map("verification_tokens")
+  @@unique([identifier, value])
+  @@map("verification")
 }
 
+// ShipLog Models
 model Product {
-  id            String    @id @default(cuid())
-  userId        String
-  name          String
-  slug          String
-  domain        String?
-  widgetColor   String    @default("#000000")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  slug        String
+  domain      String?
+  widgetColor String    @default("#000000")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries         ChangelogEntry[]
-  subscribers     Subscriber[]
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries     ChangelogEntry[]
+  subscribers Subscriber[]
 
   @@unique([userId, slug])
   @@index([userId])
-  @@map("products")
+  @@map("product")
 }
 
 model ChangelogEntry {
@@ -89,7 +102,7 @@ model ChangelogEntry {
   productId   String
   title       String
   body        String    @db.Text
-  category    String    // feature, improvement, bugfix, breaking
+  category    String
   publishedAt DateTime?
   isPublished Boolean   @default(false)
   createdAt   DateTime  @default(now())
@@ -100,7 +113,7 @@ model ChangelogEntry {
   @@index([productId])
   @@index([isPublished])
   @@index([publishedAt])
-  @@map("changelog_entries")
+  @@map("changelog_entry")
 }
 
 model Subscriber {
@@ -116,5 +129,5 @@ model Subscriber {
   @@unique([productId, email])
   @@index([productId])
   @@index([confirmedAt])
-  @@map("subscribers")
+  @@map("subscriber")
 }
