@@ -6,17 +6,12 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check auth
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { title, body, category } = await request.json();
-
     if (!title || !body || !category) {
       return NextResponse.json(
         { error: "Title, body, und category erforderlich" },
@@ -24,7 +19,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's first product
     const product = await db.product.findFirst({
       where: { userId: session.user.id },
       orderBy: { createdAt: "asc" },
@@ -37,7 +31,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create changelog entry
     const entry = await db.changelogEntry.create({
       data: {
         productId: product.id,
