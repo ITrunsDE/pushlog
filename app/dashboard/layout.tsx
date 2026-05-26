@@ -30,8 +30,8 @@ export default function DashboardLayout({
         {/* Logo */}
         <div className="px-6 py-6 border-b border-[#FAC775]">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition">
-            <div className="w-6 h-6 bg-[#BA7517] rounded-md" />
-            <span className="text-sm font-semibold text-[#2C2B28]">pushlog</span>
+            <div className="w-5 h-5 bg-[#BA7517] rounded-[4px]" />
+            <span className="text-sm font-medium text-[#412402]">pushlog</span>
           </Link>
         </div>
 
