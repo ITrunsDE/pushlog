@@ -16,12 +16,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const message = await openai.messages.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 500,
-      system:
-        "Du bist ein Changelog-Assistent. Wandle Bullet Points in einen klaren, freundlichen Changelog-Eintrag um. Antworte nur mit dem fertigen Text, keine Erklärungen, kein Markdown.",
       messages: [
+        {
+          role: "system",
+          content:
+            "Du bist ein Changelog-Assistent. Wandle Bullet Points in einen klaren, freundlichen Changelog-Eintrag um. Antworte nur mit dem fertigen Text, keine Erklärungen, kein Markdown.",
+        },
         {
           role: "user",
           content: bullets,
@@ -29,8 +32,7 @@ export async function POST(request: NextRequest) {
       ],
     });
 
-    const result =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    const result = response.choices[0]?.message?.content || "";
 
     return NextResponse.json({ result });
   } catch (error) {
