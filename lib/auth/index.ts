@@ -57,10 +57,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         nextUrl.pathname.startsWith(p)
       );
       if (isOnDashboard && !isLoggedIn) {
-        return false;
+        return Response.redirect(new URL("/login", nextUrl));
       }
       if (isOnAuthPage && isLoggedIn) {
-        return false;
+        return Response.redirect(new URL("/dashboard", nextUrl));
       }
       return true;
     },
@@ -79,4 +79,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
   },
+  trustHost: true,
 });
