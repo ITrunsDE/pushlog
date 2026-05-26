@@ -50,6 +50,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     newUser: "/register",
   },
   callbacks: {
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
+      const isOnAuthPage = ["/login", "/register"].some(p =>
+        nextUrl.pathname.startsWith(p)
+      );
+      if (isOnDashboard && !isLoggedIn) {
+        return false;
+      }
+      if (isOnAuthPage && isLoggedIn) {
+        return false;
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
