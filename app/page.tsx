@@ -210,7 +210,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer bar */}
-      <footer className="bg-[#fef9ee] px-6 py-3.5 flex items-center gap-6 text-xs text-[#854F0B]">
+      <footer className="bg-[#fef9ee] border-t border-[#FAC775] px-6 py-3.5 flex items-center gap-6 text-xs text-[#854F0B]">
         <span>✓ Free plan forever</span>
         <span>✓ Custom domain on Solo</span>
         <span>✓ No technical setup</span>
