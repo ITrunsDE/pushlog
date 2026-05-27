@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "defaultMode": "dontAsk"
+  },
+  "enableAllProjectMcpServers": true,
+  "sandbox": {
+    "network": {
+      "allowedDomains": ["localhost", "127.0.0.1"]
+    }
+  }
+}
