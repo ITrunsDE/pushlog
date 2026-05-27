@@ -21,7 +21,7 @@ export default async function DashboardLayout({
         <div className="px-6 py-6 border-b border-[#FAC775]">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition">
             <div className="w-5 h-5 bg-[#BA7517] rounded-[4px]" />
-            <span className="text-sm font-medium text-[#412402] font-[family-name:var(--font-display)]">pushlog</span>
+            <span className="text-sm font-medium text-[#412402]">pushlog</span>
           </Link>
         </div>
         <nav className="flex-1 px-3 py-6 space-y-1">
