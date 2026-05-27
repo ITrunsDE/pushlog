@@ -32,9 +32,8 @@ export default function LoginPage() {
         redirect: false,
       });
 
-      if (!result?.ok) {
-        setError("E-Mail oder Passwort ungültig");
-        setLoading(false);
+      if (result?.error) {
+        setError("E-Mail oder Passwort falsch.");
         return;
       }
 
@@ -42,6 +41,7 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+    } finally {
       setLoading(false);
     }
   };
@@ -100,8 +100,8 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="p-3 bg-[#fffdf8] border border-[#FAC775] rounded-lg">
+              <p className="text-sm text-[#633806]">{error}</p>
             </div>
           )}
 

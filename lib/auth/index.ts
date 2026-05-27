@@ -20,19 +20,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         const result = credentialsSchema.safeParse(credentials);
-        if (!result.success) return null;
+        if (!result.success) throw new Error("Invalid credentials");
 
         const user = await db.user.findUnique({
           where: { email: result.data.email },
         });
 
-        if (!user || !user.password) return null;
+        if (!user || !user.password) throw new Error("CredentialsSignin");
 
         const isPasswordValid = await compare(
           result.data.password,
           user.password
         );
-        if (!isPasswordValid) return null;
+        if (!isPasswordValid) throw new Error("CredentialsSignin");
 
         return {
           id: user.id,
