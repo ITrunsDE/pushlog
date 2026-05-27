@@ -1,27 +1,19 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { auth } from "@/lib/auth";
+import { LogoutButton } from "./_components/logout-button";
 
-export default function DashboardLayout({
+const navItems = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/entries", label: "Einträge" },
+  { href: "/dashboard/settings", label: "Einstellungen" },
+];
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await signOut({ redirect: false });
-    router.push("/");
-  };
-
-  const navItems = [
-    { href: "/dashboard", label: "Neuer Eintrag" },
-    { href: "/dashboard/entries", label: "Alle Einträge" },
-    { href: "/dashboard/subscribers", label: "Subscriber" },
-    { href: "/dashboard/settings", label: "Einstellungen" },
-  ];
+  const session = await auth();
 
   return (
     <div className="min-h-screen bg-[#fffdf8] flex">
@@ -29,7 +21,7 @@ export default function DashboardLayout({
         <div className="px-6 py-6 border-b border-[#FAC775]">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition">
             <div className="w-5 h-5 bg-[#BA7517] rounded-[4px]" />
-            <span className="text-sm font-medium text-[#412402]">pushlog</span>
+            <span className="text-sm font-medium text-[#412402] font-[family-name:var(--font-display)]">pushlog</span>
           </Link>
         </div>
         <nav className="flex-1 px-3 py-6 space-y-1">
@@ -44,12 +36,8 @@ export default function DashboardLayout({
           ))}
         </nav>
         <div className="px-6 py-6 border-t border-[#FAC775]">
-          <button
-            onClick={handleLogout}
-            className="w-full text-xs text-[#854F0B] hover:text-[#633806] py-2 transition-colors"
-          >
-            Logout
-          </button>
+          <p className="text-xs text-[#633806] mb-2">{session?.user?.email}</p>
+          <LogoutButton />
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
