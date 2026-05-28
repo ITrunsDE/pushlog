@@ -1,6 +1,12 @@
 (function () {
   "use strict";
 
+  // Guard against multiple widget instances
+  if (window.__pushlogWidgetLoaded) {
+    return;
+  }
+  window.__pushlogWidgetLoaded = true;
+
   // Get the product slug from the script tag
   const script = document.currentScript;
   const productSlug = script?.getAttribute("data-product");

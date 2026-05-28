@@ -26,6 +26,7 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
 
   const handleLoadPreview = () => {
     if (!slug) return;
+    if (widgetLoaded) return;
 
     // Inject widget script (use current host for dev/prod)
     const script = document.createElement("script");
