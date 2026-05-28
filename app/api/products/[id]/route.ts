@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
@@ -67,6 +68,8 @@ export async function PUT(
         ...(validatedData.widgetColor && { widgetColor: validatedData.widgetColor }),
       },
     });
+
+    revalidatePath("/dashboard/widget");
 
     return NextResponse.json(updatedProduct, { status: 200 });
   } catch (error) {

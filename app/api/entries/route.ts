@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
         publishedAt: new Date(),
       },
     });
+
+    revalidatePath("/dashboard/widget");
 
     return NextResponse.json(entry, { status: 201 });
   } catch (error) {

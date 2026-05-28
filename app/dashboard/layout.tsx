@@ -5,6 +5,7 @@ import { LogoutButton } from "./_components/logout-button";
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/entries", label: "Einträge" },
+  { href: "/dashboard/widget", label: "Widget" },
   { href: "/dashboard/settings", label: "Einstellungen" },
 ];
 
