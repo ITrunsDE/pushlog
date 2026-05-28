@@ -30,7 +30,7 @@ package-lock.json
 *.swo
 
 # Prisma
-/prisma/migrations/
+# /prisma/migrations/
 
 # Local development
 deploy.sh
