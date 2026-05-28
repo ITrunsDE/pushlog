@@ -112,19 +112,33 @@ model ChangelogEntry {
 }
 
 model Subscriber {
-  id          String   @id @default(cuid())
-  productId   String
-  email       String
-  confirmedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(cuid())
+  productId         String
+  email             String
+  confirmedAt       DateTime?
+  digestFrequency   String   @default("weekly")
+  lastDigestSentAt  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  confirmToken SubscriberConfirmToken?
 
   @@unique([productId, email])
   @@index([productId])
   @@index([confirmedAt])
   @@map("subscriber")
+}
+
+model SubscriberConfirmToken {
+  id           String   @id @default(cuid())
+  subscriberId String   @unique
+  token        String   @unique
+  createdAt    DateTime @default(now())
+
+  subscriber Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@map("subscriber_confirm_token")
 }
 
 model CustomCategory {

@@ -9,3 +9,12 @@ export function canUseFeature(
   };
   return features[plan]?.includes(feature) ?? false;
 }
+
+export function getSubscriberLimit(plan: string): number {
+  const limits: Record<string, number> = {
+    free: 50,
+    solo: 500,
+    pro: Infinity,
+  };
+  return limits[plan] ?? 0;
+}

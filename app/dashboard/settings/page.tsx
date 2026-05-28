@@ -5,6 +5,7 @@ import ProductSettings from "./_components/product-settings";
 import AccountSettings from "./_components/account-settings";
 import PlanSettings from "./_components/plan-settings";
 import { CategoriesSettings } from "./_components/categories-settings";
+import SubscriberSettings from "./_components/subscriber-settings";
 
 export default async function SettingsPage({
   searchParams,
@@ -54,6 +55,7 @@ export default async function SettingsPage({
       <div className="space-y-6">
         <PlanSettings user={user} />
         <ProductSettings product={product} />
+        <SubscriberSettings productId={product.id} plan={user.plan} />
         <AccountSettings user={user} />
         <CategoriesSettings plan={user.plan} />
       </div>

@@ -1,9 +1,14 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
+import SubscribeForm from "./_components/subscribe-form";
 
 interface ChangelogPageProps {
   params: Promise<{
     slug: string;
+  }>;
+  searchParams: Promise<{
+    confirmed?: string;
+    unsubscribed?: string;
   }>;
 }
 
@@ -14,8 +19,9 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
   Removed: { bg: "#FFE4E1", text: "#8B0000" },
 };
 
-export default async function ChangelogPage({ params }: ChangelogPageProps) {
+export default async function ChangelogPage({ params, searchParams }: ChangelogPageProps) {
   const { slug } = await params;
+  const { confirmed, unsubscribed } = await searchParams;
 
   const product = await db.product.findFirst({
     where: { slug },
@@ -50,8 +56,35 @@ export default async function ChangelogPage({ params }: ChangelogPageProps) {
           </p>
         </div>
 
+        {/* Status Messages */}
+        {confirmed && (
+          <div
+            className="mb-8 p-4 rounded-lg text-sm"
+            style={{
+              backgroundColor: "#E8F5E9",
+              color: "#2E7D32",
+              borderLeft: "4px solid #4CAF50",
+            }}
+          >
+            ✓ Erfolgreich bestätigt! Du erhältst nun regelmäßig Updates.
+          </div>
+        )}
+
+        {unsubscribed && (
+          <div
+            className="mb-8 p-4 rounded-lg text-sm"
+            style={{
+              backgroundColor: "#FCE4EC",
+              color: "#C2185B",
+              borderLeft: "4px solid #E91E63",
+            }}
+          >
+            Erfolgreich abgemeldet. Du erhältst keine weiteren Updates.
+          </div>
+        )}
+
         {/* Entries */}
-        <div className="space-y-6">
+        <div className="space-y-6 mb-12">
           {product.entries.length === 0 ? (
             <div
               style={{ color: "#854F0B" }}
@@ -113,6 +146,9 @@ export default async function ChangelogPage({ params }: ChangelogPageProps) {
             ))
           )}
         </div>
+
+        {/* Subscribe Form */}
+        <SubscribeForm slug={slug} />
       </div>
     </div>
   );
