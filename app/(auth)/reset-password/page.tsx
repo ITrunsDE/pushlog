@@ -3,24 +3,25 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
   const [formData, setFormData] = useState({
-    email: "",
     password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
+  // Redirect if no token
   useEffect(() => {
-    if (searchParams.get("message") === "password-reset") {
-      setShowSuccess(true);
+    if (!token) {
+      router.push("/forgot-password");
     }
-  }, [searchParams]);
+  }, [token, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,29 +31,50 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
+    // Validate
+    if (formData.password.length < 8) {
+      setError("Passwort muss mindestens 8 Zeichen lang sein");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwörter stimmen nicht überein");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          password: formData.password,
+        }),
       });
 
-      if (result?.error) {
-        setError("E-Mail oder Passwort falsch.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Ein Fehler ist aufgetreten");
         return;
       }
 
-      router.refresh();
-      router.push("/dashboard");
+      // Redirect to login with success message
+      router.push("/login?message=password-reset");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
     } finally {
       setLoading(false);
     }
   };
+
+  if (!token) {
+    return null;
+  }
 
   return (
     <div className="w-full max-w-md">
@@ -67,56 +89,40 @@ export default function LoginPage() {
       {/* Card */}
       <div className="bg-[#fef9ee] rounded-lg border border-[#FAC775] p-8">
         <h1 className="text-2xl font-bold text-[#2C2B28] mb-2 font-[family-name:var(--font-display)]">
-          Willkommen zurück
+          Neues Passwort setzen
         </h1>
-        <p className="text-[#633806] mb-6">Loggen Sie sich in Ihr Konto ein</p>
-
-        {showSuccess && (
-          <div className="p-3 bg-[#fffdf8] border border-[#FAC775] rounded-lg mb-6">
-            <p className="text-sm text-[#2C2B28]">
-              Passwort erfolgreich geändert. Bitte einloggen.
-            </p>
-          </div>
-        )}
+        <p className="text-[#633806] mb-6">Gib dein neues Passwort ein</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email Input */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#2C2B28] mb-2">
-              E-Mail
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="ihr@beispiel.de"
-              required
-              className="w-full px-4 py-2 bg-[#fffdf8] border border-[#FAC775] rounded-lg text-[#2C2B28] placeholder-[#BA7517] focus:outline-none focus:ring-2 focus:ring-[#BA7517]"
-            />
-          </div>
-
           {/* Password Input */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="password" className="block text-sm font-medium text-[#2C2B28]">
-                Passwort
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-[#BA7517] hover:text-[#9a6514] font-medium"
-              >
-                Passwort vergessen?
-              </Link>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium text-[#2C2B28] mb-2">
+              Neues Passwort
+            </label>
             <input
               type="password"
               id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Ihr Passwort"
+              placeholder="Mindestens 8 Zeichen"
+              required
+              className="w-full px-4 py-2 bg-[#fffdf8] border border-[#FAC775] rounded-lg text-[#2C2B28] placeholder-[#BA7517] focus:outline-none focus:ring-2 focus:ring-[#BA7517]"
+            />
+          </div>
+
+          {/* Confirm Password Input */}
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#2C2B28] mb-2">
+              Passwort bestätigen
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Passwort wiederholen"
               required
               className="w-full px-4 py-2 bg-[#fffdf8] border border-[#FAC775] rounded-lg text-[#2C2B28] placeholder-[#BA7517] focus:outline-none focus:ring-2 focus:ring-[#BA7517]"
             />
@@ -135,15 +141,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-[#BA7517] hover:bg-[#9a6514] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition mt-6"
           >
-            {loading ? "Wird angemeldet..." : "Einloggen"}
+            {loading ? "Wird gespeichert..." : "Passwort speichern"}
           </button>
         </form>
 
-        {/* Register Link */}
+        {/* Back to Forgot Password Link */}
         <p className="text-center text-[#633806] mt-6">
-          Noch kein Konto?{" "}
-          <Link href="/register" className="text-[#BA7517] hover:text-[#9a6514] font-medium">
-            Registrieren
+          <Link href="/forgot-password" className="text-[#BA7517] hover:text-[#9a6514] font-medium">
+            Link neu anfordern
           </Link>
         </p>
       </div>
