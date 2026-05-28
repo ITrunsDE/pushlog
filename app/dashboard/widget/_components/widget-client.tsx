@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 
+declare global {
+  interface Window {
+    __pushlogFreeLoaded?: boolean;
+    __pushlogProLoaded?: boolean;
+  }
+}
+
 export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null; userPlan?: string }) {
   const [copied, setCopied] = useState(false);
   const [freeLoaded, setFreeLoaded] = useState(false);

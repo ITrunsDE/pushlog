@@ -10,7 +10,7 @@ const STANDARD_CATEGORIES = [
   { name: "security", label: "Security", color: "#22c55e" },
 ];
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

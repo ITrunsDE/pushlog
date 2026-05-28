@@ -2,7 +2,6 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { SidebarUserBlock } from "./_components/sidebar-user-block";
-import { LogoutButton } from "./_components/logout-button";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },

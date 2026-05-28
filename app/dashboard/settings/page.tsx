@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import ProductSettings from "./_components/product-settings";
 import AccountSettings from "./_components/account-settings";
 import PlanSettings from "./_components/plan-settings";

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 
 interface SidebarUserBlockProps {
