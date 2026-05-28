@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { User } from "@prisma/client";
 
 interface PlanSettingsProps {
@@ -16,9 +16,19 @@ const PLANS = {
 export default function PlanSettings({ user }: PlanSettingsProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const currentPlan = (user.plan || "free") as keyof typeof PLANS;
   const planInfo = PLANS[currentPlan];
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") {
+      setShowSuccessMessage(true);
+      window.history.replaceState({}, "", "/dashboard/settings");
+      setTimeout(() => setShowSuccessMessage(false), 5000);
+    }
+  }, []);
 
   const handleUpgrade = async (plan: "solo" | "pro") => {
     setLoading(true);
@@ -34,6 +44,58 @@ export default function PlanSettings({ user }: PlanSettingsProps) {
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Fehler beim Checkout");
+      }
+
+      const { url } = await res.json();
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePlan = async (targetPlan: "solo" | "pro") => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/stripe/change-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetPlan }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Fehler beim Plan-Wechsel");
+      }
+
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 5000);
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManagePlan = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/stripe/create-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Fehler beim Öffnen der Verwaltung");
       }
 
       const { url } = await res.json();
@@ -69,6 +131,13 @@ export default function PlanSettings({ user }: PlanSettingsProps) {
         </div>
       </div>
 
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-6">
+          <p className="text-sm text-green-700">✓ Plan erfolgreich geändert!</p>
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-6">
@@ -76,7 +145,7 @@ export default function PlanSettings({ user }: PlanSettingsProps) {
         </div>
       )}
 
-      {/* Upgrade Buttons (only for free plan) */}
+      {/* Free Plan: Upgrade Buttons */}
       {currentPlan === "free" && (
         <div className="space-y-3">
           <button
@@ -96,11 +165,44 @@ export default function PlanSettings({ user }: PlanSettingsProps) {
         </div>
       )}
 
-      {/* Current Plan Message (for paid plans) */}
-      {currentPlan !== "free" && (
-        <p className="text-sm text-[#854F0B]">
-          Sie haben derzeit den {planInfo.name}-Plan abonniert.
-        </p>
+      {/* Solo Plan: Upgrade & Manage */}
+      {currentPlan === "solo" && (
+        <div className="space-y-3">
+          <button
+            onClick={() => handleChangePlan("pro")}
+            disabled={loading}
+            className="w-full bg-gray-800 hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
+          >
+            {loading ? "Wird geladen..." : "Upgrade auf Pro – €29/Mo"}
+          </button>
+          <button
+            onClick={handleManagePlan}
+            disabled={loading}
+            className="w-full bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 font-medium py-2.5 rounded-lg transition border border-gray-300"
+          >
+            {loading ? "Wird geladen..." : "Verwalten / Kündigen"}
+          </button>
+        </div>
+      )}
+
+      {/* Pro Plan: Downgrade & Manage */}
+      {currentPlan === "pro" && (
+        <div className="space-y-3">
+          <button
+            onClick={() => handleChangePlan("solo")}
+            disabled={loading}
+            className="w-full bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 font-medium py-2.5 rounded-lg transition border border-gray-300"
+          >
+            {loading ? "Wird geladen..." : "Downgrade auf Solo – €12/Mo"}
+          </button>
+          <button
+            onClick={handleManagePlan}
+            disabled={loading}
+            className="w-full bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 font-medium py-2.5 rounded-lg transition border border-gray-300"
+          >
+            {loading ? "Wird geladen..." : "Verwalten / Kündigen"}
+          </button>
+        </div>
       )}
     </div>
   );
