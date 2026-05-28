@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { SidebarUserBlock } from "./_components/sidebar-user-block";
 import { LogoutButton } from "./_components/logout-button";
 
 const navItems = [
@@ -16,16 +18,25 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
+  let userPlan = "free";
+  if (session?.user?.id) {
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+    userPlan = user?.plan || "free";
+  }
+
   return (
-    <div className="min-h-screen bg-[#fffdf8] flex">
-      <aside className="w-56 bg-[#fef9ee] border-r border-[#FAC775] flex flex-col">
+    <div className="min-h-screen bg-[#fffdf8]">
+      <aside className="hidden md:flex fixed top-0 left-0 h-screen w-56 bg-[#fef9ee] border-r border-[#FAC775] flex-col z-40">
         <div className="px-6 py-6 border-b border-[#FAC775]">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition">
             <div className="w-5 h-5 bg-[#BA7517] rounded-[4px]" />
             <span className="text-sm font-medium text-[#412402]">pushlog</span>
           </Link>
         </div>
-        <nav className="flex-1 px-3 py-6 space-y-1">
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -36,12 +47,9 @@ export default async function DashboardLayout({
             </Link>
           ))}
         </nav>
-        <div className="px-6 py-6 border-t border-[#FAC775]">
-          <p className="text-xs text-[#633806] mb-2">{session?.user?.email}</p>
-          <LogoutButton />
-        </div>
+        {session?.user?.email && <SidebarUserBlock email={session.user.email} plan={userPlan} />}
       </aside>
-      <main className="flex-1 overflow-auto">
+      <main className="md:ml-56 overflow-auto">
         {children}
       </main>
     </div>

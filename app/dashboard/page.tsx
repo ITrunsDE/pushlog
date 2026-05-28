@@ -2,20 +2,18 @@
 
 import { useState, useEffect } from "react";
 
-type Category = "New" | "Fix" | "Improved" | "Removed";
-
-const categoryColors: Record<Category, { bg: string; text: string; label: string }> = {
-  New: { bg: "#085041", text: "#9FE1CB", label: "New" },
-  Fix: { bg: "#FAEEDA", text: "#633806", label: "Fix" },
-  Improved: { bg: "#085041", text: "#9FE1CB", label: "Improved" },
-  Removed: { bg: "#FFE4E1", text: "#8B0000", label: "Removed" },
-};
+interface Category {
+  name: string;
+  label: string;
+  color: string;
+}
 
 export default function DashboardPage() {
   const [bullets, setBullets] = useState("");
   const [improved, setImproved] = useState("");
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Category>("New");
+  const [category, setCategory] = useState<string>("");
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,20 +21,31 @@ export default function DashboardPage() {
   const [productId, setProductId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/products/me");
-        if (!res.ok) throw new Error("Fehler beim Laden der Produkte");
-        const data = (await res.json()) as Array<{ id: string }>;
-        if (data.length > 0) {
-          setProductId(data[0].id);
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch("/api/products/me"),
+          fetch("/api/categories"),
+        ]);
+
+        if (!productsRes.ok) throw new Error("Fehler beim Laden der Produkte");
+        const productData = (await productsRes.json()) as Array<{ id: string }>;
+        if (productData.length > 0) {
+          setProductId(productData[0].id);
+        }
+
+        if (!categoriesRes.ok) throw new Error("Fehler beim Laden der Kategorien");
+        const categoryData = (await categoriesRes.json()) as Category[];
+        setCategories(categoryData);
+        if (categoryData.length > 0) {
+          setCategory(categoryData[0].name);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Fehler beim Laden der Produkte");
+        setError(err instanceof Error ? err.message : "Fehler beim Laden der Daten");
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
   const handleImprove = async () => {
@@ -178,13 +187,14 @@ export default function DashboardPage() {
           </label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value as Category)}
+            onChange={(e) => setCategory(e.target.value)}
             className="w-full px-4 py-2 bg-[#fffdf8] border border-[#FAC775] rounded-lg text-[#2C2B28] focus:outline-none focus:ring-2 focus:ring-[#BA7517]"
           >
-            <option value="New">New</option>
-            <option value="Fix">Fix</option>
-            <option value="Improved">Improved</option>
-            <option value="Removed">Removed</option>
+            {categories.map((cat) => (
+              <option key={cat.name} value={cat.name}>
+                {cat.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -221,15 +231,20 @@ export default function DashboardPage() {
         {title && improved && (
           <div className="bg-[#fffdf8] border border-[#FAC775] rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <span
-                className="text-[10px] font-medium px-2.5 py-0.5 rounded-full"
-                style={{
-                  backgroundColor: categoryColors[category].bg,
-                  color: categoryColors[category].text,
-                }}
-              >
-                {categoryColors[category].label}
-              </span>
+              {(() => {
+                const selectedCategory = categories.find((cat) => cat.name === category);
+                return selectedCategory ? (
+                  <span
+                    className="text-[10px] font-medium px-2.5 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: selectedCategory.color,
+                      color: "#fff",
+                    }}
+                  >
+                    {selectedCategory.label}
+                  </span>
+                ) : null;
+              })()}
               <span className="text-sm font-medium text-[#2C2B28]">{title}</span>
             </div>
             <p className="text-xs text-[#633806] leading-relaxed whitespace-pre-wrap">

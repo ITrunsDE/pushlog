@@ -22,9 +22,10 @@ model User {
   plan              String    @default("free")
   stripeCustomerId  String?
 
-  accounts  Account[]
-  sessions  Session[]
-  products  Product[]
+  accounts           Account[]
+  sessions           Session[]
+  products           Product[]
+  customCategories   CustomCategory[]
 
   @@map("user")
 }
@@ -124,4 +125,20 @@ model Subscriber {
   @@index([productId])
   @@index([confirmedAt])
   @@map("subscriber")
+}
+
+model CustomCategory {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  label     String
+  color     String
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("custom_category")
 }

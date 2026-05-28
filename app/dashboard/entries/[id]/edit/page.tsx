@@ -3,22 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 
-type Category = "New" | "Fix" | "Improved" | "Removed";
+interface Category {
+  name: string;
+  label: string;
+  color: string;
+}
 
 interface Entry {
   id: string;
   title: string;
   body: string;
-  category: Category;
+  category: string;
   productId: string;
+  publishedAt?: string;
 }
-
-const categoryColors: Record<Category, { bg: string; text: string; label: string }> = {
-  New: { bg: "#085041", text: "#9FE1CB", label: "New" },
-  Fix: { bg: "#FAEEDA", text: "#633806", label: "Fix" },
-  Improved: { bg: "#085041", text: "#9FE1CB", label: "Improved" },
-  Removed: { bg: "#FFE4E1", text: "#8B0000", label: "Removed" },
-};
 
 export default function EditEntryPage() {
   const router = useRouter();
@@ -27,7 +25,8 @@ export default function EditEntryPage() {
   const [entry, setEntry] = useState<Entry | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [category, setCategory] = useState<Category>("New");
+  const [category, setCategory] = useState<string>("");
+  const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,22 +35,32 @@ export default function EditEntryPage() {
   const entryId = params.id as string;
 
   useEffect(() => {
-    const fetchEntry = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`/api/entries/${entryId}`);
-        if (!res.ok) {
-          if (res.status === 404) {
+        const [entryRes, categoriesRes] = await Promise.all([
+          fetch(`/api/entries/${entryId}`),
+          fetch("/api/categories"),
+        ]);
+
+        if (!entryRes.ok) {
+          if (entryRes.status === 404) {
             throw new Error("Eintrag nicht gefunden");
-          } else if (res.status === 403) {
+          } else if (entryRes.status === 403) {
             throw new Error("Du hast keine Berechtigung, diesen Eintrag zu bearbeiten");
           }
           throw new Error("Fehler beim Laden des Eintrags");
         }
-        const data = await res.json();
-        setEntry(data);
-        setTitle(data.title);
-        setBody(data.body);
-        setCategory(data.category as Category);
+
+        const entryData = await entryRes.json();
+        setEntry(entryData);
+        setTitle(entryData.title);
+        setBody(entryData.body);
+        setCategory(entryData.category);
+
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
       } finally {
@@ -60,7 +69,7 @@ export default function EditEntryPage() {
     };
 
     if (entryId) {
-      fetchEntry();
+      fetchData();
     }
   }, [entryId]);
 
@@ -159,13 +168,14 @@ export default function EditEntryPage() {
           </label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value as Category)}
+            onChange={(e) => setCategory(e.target.value)}
             className="w-full px-4 py-2 bg-[#fffdf8] border border-[#FAC775] rounded-lg text-[#2C2B28] focus:outline-none focus:ring-2 focus:ring-[#BA7517]"
           >
-            <option value="New">New</option>
-            <option value="Fix">Fix</option>
-            <option value="Improved">Improved</option>
-            <option value="Removed">Removed</option>
+            {categories.map((cat) => (
+              <option key={cat.name} value={cat.name}>
+                {cat.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -202,22 +212,27 @@ export default function EditEntryPage() {
         {title && body && (
           <div className="bg-[#fffdf8] border border-[#FAC775] rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <span
-                className="text-[10px] font-medium px-2.5 py-0.5 rounded-full"
-                style={{
-                  backgroundColor: categoryColors[category].bg,
-                  color: categoryColors[category].text,
-                }}
-              >
-                {categoryColors[category].label}
-              </span>
+              {(() => {
+                const selectedCategory = categories.find((cat) => cat.name === category);
+                return selectedCategory ? (
+                  <span
+                    className="text-[10px] font-medium px-2.5 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: selectedCategory.color,
+                      color: "#fff",
+                    }}
+                  >
+                    {selectedCategory.label}
+                  </span>
+                ) : null;
+              })()}
               <span className="text-sm font-medium text-[#2C2B28]">{title}</span>
             </div>
             <p className="text-xs text-[#633806] leading-relaxed whitespace-pre-wrap">
               {body}
             </p>
             <p className="text-[11px] text-[#BA7517] mt-3">
-              {entry.publishedAt
+              {entry?.publishedAt
                 ? new Date(entry.publishedAt).toLocaleDateString("de-DE", {
                     year: "numeric",
                     month: "long",

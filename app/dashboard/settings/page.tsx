@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import ProductSettings from "./_components/product-settings";
 import AccountSettings from "./_components/account-settings";
 import PlanSettings from "./_components/plan-settings";
+import { CategoriesSettings } from "./_components/categories-settings";
 
 export default async function SettingsPage({
   searchParams,
@@ -55,6 +56,7 @@ export default async function SettingsPage({
         <PlanSettings user={user} />
         <ProductSettings product={product} />
         <AccountSettings user={user} />
+        <CategoriesSettings plan={user.plan} />
       </div>
     </div>
   );

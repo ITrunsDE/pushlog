@@ -4,19 +4,23 @@ import { useState } from "react";
 
 export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null; userPlan?: string }) {
   const [copied, setCopied] = useState(false);
-  const [widgetLoaded, setWidgetLoaded] = useState(false);
+  const [freeLoaded, setFreeLoaded] = useState(false);
   const [proCopied, setProCopied] = useState(false);
-  const [proWidgetLoaded, setProWidgetLoaded] = useState(false);
+  const [proLoaded, setProLoaded] = useState(false);
   const isPro = userPlan === "pro";
 
-  const scriptTag = slug
+  const freeScriptTag = slug
     ? `<script src="https://pushlog.io/widget.js" data-product="${slug}"><\/script>`
     : "";
 
+  const proScriptTag = slug
+    ? `<script src="https://pushlog.io/widget-pro.js" data-product="${slug}" data-style="popup" data-position="bottom-right" data-limit="5" data-category="feature"><\/script>`
+    : "";
+
   const handleCopyCode = async () => {
-    if (!scriptTag) return;
+    if (!freeScriptTag) return;
     try {
-      await navigator.clipboard.writeText(scriptTag);
+      await navigator.clipboard.writeText(freeScriptTag);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -24,25 +28,42 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
     }
   };
 
-  const handleLoadPreview = () => {
+  const handleLoadFreePreview = () => {
     if (!slug) return;
-    if (widgetLoaded) return;
 
-    // Inject widget script (use current host for dev/prod)
+    // Clean up old widget if reloading
+    if (freeLoaded) {
+      delete window.__pushlogFreeLoaded;
+      const existingScript = document.querySelector(
+        'script[src*="widget.js"]:not([src*="widget-pro"])'
+      );
+      if (existingScript) existingScript.remove();
+
+      const button = document.querySelector(".pushlog-button");
+      if (button) button.remove();
+      const popup = document.querySelector(".pushlog-popup");
+      if (popup) popup.remove();
+      const overlay = document.querySelector(".pushlog-overlay");
+      if (overlay) overlay.remove();
+
+      setFreeLoaded(false);
+      return;
+    }
+
+    // Inject free widget script
     const script = document.createElement("script");
     const host = typeof window !== "undefined" ? window.location.origin : "https://pushlog.io";
     script.src = `${host}/widget.js`;
     script.setAttribute("data-product", slug);
     document.body.appendChild(script);
 
-    setWidgetLoaded(true);
+    setFreeLoaded(true);
   };
 
   const handleCopyProCode = async () => {
-    if (!slug) return;
-    const scriptTag = `<script src="https://pushlog.io/widget.js" data-product="${slug}" data-style="popup" data-position="bottom-right" data-limit="5" data-category="feature"><\/script>`;
+    if (!proScriptTag) return;
     try {
-      await navigator.clipboard.writeText(scriptTag);
+      await navigator.clipboard.writeText(proScriptTag);
       setProCopied(true);
       setTimeout(() => setProCopied(false), 2000);
     } catch (err) {
@@ -53,37 +74,42 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
   const handleLoadProPreview = () => {
     if (!slug) return;
 
-    // Clear previous script
-    const existingScript = document.querySelector(
-      'script[data-product][data-style="inline"]'
-    );
-    if (existingScript) existingScript.remove();
+    // Clean up old widget if reloading
+    if (proLoaded) {
+      delete window.__pushlogProLoaded;
+      const existingScript = document.querySelector(
+        'script[src*="widget-pro.js"]'
+      );
+      if (existingScript) existingScript.remove();
 
-    // Clear previous widget content and reset guard
-    const target = document.getElementById("pushlog-inline-preview");
-    if (target) {
-      target.innerHTML = "";
-      target.removeAttribute("data-pushlog-loaded");
+      const target = document.getElementById("pushlog-pro-preview");
+      if (target) {
+        target.innerHTML = "";
+        target.removeAttribute("data-pushlog-loaded");
+      }
+
+      setProLoaded(false);
+      return;
     }
 
-    setProWidgetLoaded(true);
-
-    // Inject widget script AFTER checking target exists
+    // Inject pro widget script AFTER checking target exists
     setTimeout(() => {
-      const targetDiv = document.getElementById("pushlog-inline-preview");
+      const targetDiv = document.getElementById("pushlog-pro-preview");
       if (!targetDiv) {
-        console.error("[Pushlog] Target div not found");
+        console.error("[Pushlog Widget Pro] Target div not found");
         return;
       }
 
       const script = document.createElement("script");
       const host = typeof window !== "undefined" ? window.location.origin : "https://pushlog.io";
-      script.src = `${host}/widget.js`;
+      script.src = `${host}/widget-pro.js`;
       script.setAttribute("data-product", slug);
       script.setAttribute("data-style", "inline");
-      script.setAttribute("data-target", "#pushlog-inline-preview");
+      script.setAttribute("data-target", "#pushlog-pro-preview");
       script.setAttribute("data-limit", "5");
       document.head.appendChild(script);
+
+      setProLoaded(true);
     }, 0);
   };
 
@@ -108,18 +134,18 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
         Integriere dein Pushlog Widget auf jeder Website
       </p>
 
-      {/* Integration Section */}
+      {/* Free Widget Section */}
       <div className="mb-12">
-        <h2 className="text-xl font-medium text-[#2C2B28] mb-4">Integration</h2>
+        <h2 className="text-xl font-medium text-[#2C2B28] mb-4">Free Widget</h2>
         <p className="text-[#633806] text-sm mb-4">
           Kopiere diesen Code und füge ihn auf deiner Website ein. Das Widget
-          wird automatisch in der unteren rechten Ecke angezeigt.
+          wird automatisch in der unteren rechten Ecke angezeigt mit einer Glocken-Button.
         </p>
 
         <div className="bg-[#fef9ee] border border-[#FAC775] rounded-lg p-4 mb-4">
           <div className="relative">
             <code className="text-[#2C2B28] text-sm font-mono block break-all">
-              {scriptTag}
+              {freeScriptTag}
             </code>
             <button
               onClick={handleCopyCode}
@@ -130,35 +156,22 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
           </div>
         </div>
 
-        <p className="text-xs text-[#854F0B]">
+        <p className="text-xs text-[#854F0B] mb-4">
           Slug: <span className="font-mono font-medium">{slug}</span>
-        </p>
-      </div>
-
-      {/* Live Preview Section */}
-      <div className="mb-12">
-        <h2 className="text-xl font-medium text-[#2C2B28] mb-4">
-          Live Preview
-        </h2>
-        <p className="text-[#633806] text-sm mb-6">
-          Klicke auf den Button unten, um das Widget in diesem Fenster zu laden.
-          Im echten Einsatz erscheint das Widget automatisch beim Laden der
-          Website.
         </p>
 
         <button
-          onClick={handleLoadPreview}
-          disabled={widgetLoaded}
-          className="px-6 py-2.5 bg-[#BA7517] hover:bg-[#9a6514] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition"
+          onClick={handleLoadFreePreview}
+          className="px-6 py-2.5 bg-[#BA7517] hover:bg-[#9a6514] text-white font-medium rounded-lg transition"
         >
-          {widgetLoaded ? "✓ Widget geladen" : "Preview laden"}
+          {freeLoaded ? "✓ Free Preview laden" : "Free Preview laden"}
         </button>
 
-        {widgetLoaded && (
+        {freeLoaded && (
           <div className="mt-4 p-4 bg-[#fffdf8] border border-[#FAC775] rounded-lg">
             <p className="text-xs text-[#854F0B]">
               Das Widget sollte jetzt in der unteren rechten Ecke des Fensters
-              sichtbar sein. Klicke auf die Glocke (🔔) um das Popup zu öffnen.
+              sichtbar sein (Glocken-Button 🔔). Klicke darauf um das Popup zu öffnen.
             </p>
           </div>
         )}
@@ -240,7 +253,7 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
             <div className="bg-[#fef9ee] border border-[#FAC775] rounded-lg p-4 mb-4">
               <div className="relative">
                 <code className="text-[#2C2B28] text-sm font-mono block break-all">
-                  {`<script src="https://pushlog.io/widget.js" data-product="${slug}" data-style="popup" data-position="bottom-right" data-limit="5" data-category="feature"><\/script>`}
+                  {proScriptTag}
                 </code>
                 <button
                   onClick={handleCopyProCode}
@@ -258,7 +271,7 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
             <div className="bg-[#fef9ee] border border-[#FAC775] rounded-lg p-4 mb-4">
               <div className="relative">
                 <code className="text-[#2C2B28] text-sm font-mono block break-all">
-                  {`<div id="my-changelog"><\/div>\n<script src="https://pushlog.io/widget.js" data-product="${slug}" data-style="inline" data-target="#my-changelog" data-limit="3"><\/script>`}
+                  {`<div id="my-changelog"><\/div>\n<script src="https://pushlog.io/widget-pro.js" data-product="${slug}" data-style="inline" data-target="#my-changelog" data-limit="3"><\/script>`}
                 </code>
               </div>
             </div>
@@ -273,20 +286,19 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
 
             <button
               onClick={handleLoadProPreview}
-              disabled={proWidgetLoaded}
-              className="px-6 py-2.5 bg-[#BA7517] hover:bg-[#9a6514] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition mb-4"
+              className="px-6 py-2.5 bg-[#BA7517] hover:bg-[#9a6514] text-white font-medium rounded-lg transition mb-4"
             >
-              {proWidgetLoaded ? "✓ Preview geladen" : "Inline Preview laden"}
+              {proLoaded ? "✓ Pro Preview laden" : "Pro Preview laden"}
             </button>
 
             <div className="mt-4">
               <p className="text-xs text-[#854F0B] mb-3">
-                Inline Widget Preview:
+                Pro Widget Inline Preview:
               </p>
               <div
-                id="pushlog-inline-preview"
+                id="pushlog-pro-preview"
                 className={`min-h-[300px] border border-[#FAC775] rounded-lg overflow-y-auto ${
-                  proWidgetLoaded ? "bg-[#fffdf8]" : "bg-gray-100"
+                  proLoaded ? "bg-[#fffdf8]" : "bg-gray-100"
                 }`}
               ></div>
             </div>
