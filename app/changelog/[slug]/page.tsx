@@ -1,6 +1,9 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import SubscribeForm from "./_components/subscribe-form";
+import { canUseFeature } from "@/lib/plan";
+
+export const dynamic = "force-dynamic";
 
 interface ChangelogPageProps {
   params: Promise<{
@@ -26,6 +29,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
   const product = await db.product.findFirst({
     where: { slug },
     include: {
+      user: { select: { plan: true } },
       entries: {
         where: { isPublished: true },
         orderBy: { publishedAt: "desc" },
@@ -36,6 +40,13 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
   if (!product) {
     notFound();
   }
+
+  const plan = product.user.plan;
+  const builtInCategories = new Set(Object.keys(categoryColors));
+  const entries = canUseFeature(plan, "custom_categories")
+    ? product.entries
+    : product.entries.filter((e) => builtInCategories.has(e.category));
+  const showBranding = !canUseFeature(plan, "white_label");
 
   return (
     <div
@@ -85,7 +96,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
 
         {/* Entries */}
         <div className="space-y-6 mb-12">
-          {product.entries.length === 0 ? (
+          {entries.length === 0 ? (
             <div
               style={{ color: "#854F0B" }}
               className="text-center py-12"
@@ -93,7 +104,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
               <p>Noch keine Einträge veröffentlicht</p>
             </div>
           ) : (
-            product.entries.map((entry) => (
+            entries.map((entry) => (
               <div
                 key={entry.id}
                 className="rounded-lg p-6 border"
@@ -149,6 +160,20 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
 
         {/* Subscribe Form */}
         <SubscribeForm slug={slug} />
+
+        {showBranding && (
+          <div className="mt-10 pt-6 text-center" style={{ borderTop: "1px solid #FAC775" }}>
+            <a
+              href="https://pushlog.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs"
+              style={{ color: "#BA7517" }}
+            >
+              Powered by Pushlog
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
