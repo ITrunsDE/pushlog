@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 
-export default function SubscribeForm({ slug }: { slug: string }) {
+export default function SubscribeForm({ slug, ownerPlan }: { slug: string; ownerPlan: string }) {
   const [email, setEmail] = useState("");
-  const [frequency, setFrequency] = useState<"weekly" | "monthly">("weekly");
+  const weeklyAllowed = ownerPlan !== "free";
+  const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -26,10 +27,11 @@ export default function SubscribeForm({ slug }: { slug: string }) {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage({
-          type: "error",
-          text: data.error || "Fehler beim Abonnieren",
-        });
+        const text =
+          data.error === "subscriber_limit_reached"
+            ? "Subscriptions are currently closed."
+            : data.error || "Fehler beim Abonnieren";
+        setMessage({ type: "error", text });
       } else {
         setMessage({
           type: "success",
@@ -80,37 +82,40 @@ export default function SubscribeForm({ slug }: { slug: string }) {
           />
         </div>
 
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 flex-1">
-            <input
-              type="radio"
-              name="frequency"
-              value="weekly"
-              checked={frequency === "weekly"}
-              onChange={(e) => setFrequency(e.target.value as "weekly" | "monthly")}
-              disabled={loading}
-              className="cursor-pointer"
-            />
-            <span style={{ color: "#633806" }} className="text-sm">
-              Wöchentlich
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2 flex-1">
-            <input
-              type="radio"
-              name="frequency"
-              value="monthly"
-              checked={frequency === "monthly"}
-              onChange={(e) => setFrequency(e.target.value as "weekly" | "monthly")}
-              disabled={loading}
-              className="cursor-pointer"
-            />
-            <span style={{ color: "#633806" }} className="text-sm">
-              Monatlich
-            </span>
-          </label>
-        </div>
+        {weeklyAllowed ? (
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 flex-1">
+              <input
+                type="radio"
+                name="frequency"
+                value="weekly"
+                checked={frequency === "weekly"}
+                onChange={(e) => setFrequency(e.target.value as "weekly" | "monthly")}
+                disabled={loading}
+                className="cursor-pointer"
+              />
+              <span style={{ color: "#633806" }} className="text-sm">
+                Wöchentlich
+              </span>
+            </label>
+            <label className="flex items-center gap-2 flex-1">
+              <input
+                type="radio"
+                name="frequency"
+                value="monthly"
+                checked={frequency === "monthly"}
+                onChange={(e) => setFrequency(e.target.value as "weekly" | "monthly")}
+                disabled={loading}
+                className="cursor-pointer"
+              />
+              <span style={{ color: "#633806" }} className="text-sm">
+                Monatlich
+              </span>
+            </label>
+          </div>
+        ) : (
+          <input type="hidden" name="frequency" value="monthly" />
+        )}
 
         <button
           type="submit"

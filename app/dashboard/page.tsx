@@ -6,6 +6,13 @@ interface Category {
   name: string;
   label: string;
   color: string;
+  locked?: boolean;
+}
+
+interface UserInfo {
+  plan: string;
+  aiUsed: number;
+  aiLimit: number | null;
 }
 
 export default function DashboardPage() {
@@ -19,13 +26,16 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [limitBanner, setLimitBanner] = useState<"entry_limit_reached" | "ai_limit_reached" | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, categoriesRes] = await Promise.all([
+        const [productsRes, categoriesRes, userRes] = await Promise.all([
           fetch("/api/products/me"),
           fetch("/api/categories"),
+          fetch("/api/user/me"),
         ]);
 
         if (!productsRes.ok) throw new Error("Fehler beim Laden der Produkte");
@@ -36,9 +46,15 @@ export default function DashboardPage() {
 
         if (!categoriesRes.ok) throw new Error("Fehler beim Laden der Kategorien");
         const categoryData = (await categoriesRes.json()) as Category[];
-        setCategories(categoryData);
-        if (categoryData.length > 0) {
-          setCategory(categoryData[0].name);
+        const availableCategories = categoryData.filter((cat) => !cat.locked);
+        setCategories(availableCategories);
+        if (availableCategories.length > 0) {
+          setCategory(availableCategories[0].name);
+        }
+
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUserInfo(userData);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Fehler beim Laden der Daten");
@@ -56,6 +72,7 @@ export default function DashboardPage() {
 
     setLoadingAI(true);
     setError(null);
+    setLimitBanner(null);
 
     try {
       const res = await fetch("/api/ai/improve", {
@@ -64,9 +81,21 @@ export default function DashboardPage() {
         body: JSON.stringify({ bullets }),
       });
 
+      if (res.status === 403) {
+        const data = await res.json();
+        if (data.error === "ai_limit_reached") {
+          setLimitBanner("ai_limit_reached");
+          return;
+        }
+      }
+
       if (!res.ok) throw new Error("KI-Verbesserung fehlgeschlagen");
       const data = await res.json();
       setImproved(data.result);
+
+      // Refresh user info to update counter
+      const userRes = await fetch("/api/user/me");
+      if (userRes.ok) setUserInfo(await userRes.json());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
     } finally {
@@ -88,6 +117,7 @@ export default function DashboardPage() {
     setPublishing(true);
     setError(null);
     setSuccess(null);
+    setLimitBanner(null);
 
     try {
       const res = await fetch("/api/entries", {
@@ -100,6 +130,14 @@ export default function DashboardPage() {
           productId,
         }),
       });
+
+      if (res.status === 403) {
+        const data = await res.json();
+        if (data.error === "entry_limit_reached") {
+          setLimitBanner("entry_limit_reached");
+          return;
+        }
+      }
 
       if (!res.ok) throw new Error("Veröffentlichung fehlgeschlagen");
 
@@ -120,6 +158,14 @@ export default function DashboardPage() {
     }
   };
 
+  const nextMonthFirst = (() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 1).toLocaleDateString("de-DE", {
+      day: "numeric",
+      month: "long",
+    });
+  })();
+
   return (
     <div className="flex">
       {/* Editor - 60% */}
@@ -127,6 +173,30 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-medium text-[#2C2B28] mb-8 font-[family-name:var(--font-display)]">
           Neuer Eintrag
         </h1>
+
+        {/* Limit banners */}
+        {limitBanner === "entry_limit_reached" && (
+          <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg mb-6">
+            <p className="text-sm text-amber-800">
+              You&apos;ve reached the 25 entry limit on the Free plan.{" "}
+              <a href="/dashboard/settings" className="underline font-medium">
+                Upgrade to Solo
+              </a>{" "}
+              for unlimited entries.
+            </p>
+          </div>
+        )}
+        {limitBanner === "ai_limit_reached" && (
+          <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg mb-6">
+            <p className="text-sm text-amber-800">
+              You&apos;ve used all 5 AI generations for this month. Resets on {nextMonthFirst}.{" "}
+              <a href="/dashboard/settings" className="underline font-medium">
+                Upgrade to Solo
+              </a>{" "}
+              for unlimited AI generation.
+            </p>
+          </div>
+        )}
 
         {/* Bullets Input */}
         <div className="mb-6">
@@ -143,14 +213,21 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* AI Improve Button */}
-        <button
-          onClick={handleImprove}
-          disabled={loadingAI}
-          className="w-full bg-[#BA7517] hover:bg-[#9a6514] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition mb-6"
-        >
-          {loadingAI ? "Wird verbessert..." : "Mit KI verbessern ✦"}
-        </button>
+        {/* AI Improve Button + counter */}
+        <div className="mb-6">
+          <button
+            onClick={handleImprove}
+            disabled={loadingAI}
+            className="w-full bg-[#BA7517] hover:bg-[#9a6514] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
+          >
+            {loadingAI ? "Wird verbessert..." : "Mit KI verbessern ✦"}
+          </button>
+          {userInfo?.plan === "free" && userInfo.aiLimit !== null && (
+            <p className="text-xs text-[#854F0B] mt-1.5 text-right">
+              {userInfo.aiUsed} / {userInfo.aiLimit} AI generations used this month
+            </p>
+          )}
+        </div>
 
         {/* Improved Output */}
         {improved && (

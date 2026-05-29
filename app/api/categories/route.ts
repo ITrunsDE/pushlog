@@ -26,25 +26,26 @@ export async function GET(_req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const canUseCustom = canUseFeature(user.plan, "custom_categories");
     const categories = [...STANDARD_CATEGORIES];
 
-    if (canUseFeature(user.plan, "custom_categories")) {
-      const customCategories = await db.customCategory.findMany({
-        where: {
-          userId: session.user.id,
-          deletedAt: null,
-        },
-      });
-      categories.push(
-        ...customCategories.map((cat) => ({
-          name: cat.name,
-          label: cat.label,
-          color: cat.color,
-          isCustom: true,
-          id: cat.id,
-        }))
-      );
-    }
+    const customCategories = await db.customCategory.findMany({
+      where: {
+        userId: session.user.id,
+        deletedAt: null,
+      },
+    });
+
+    categories.push(
+      ...customCategories.map((cat) => ({
+        name: cat.name,
+        label: cat.label,
+        color: cat.color,
+        isCustom: true,
+        id: cat.id,
+        locked: !canUseCustom,
+      }))
+    );
 
     return NextResponse.json(categories);
   } catch (error) {

@@ -4,11 +4,30 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, turnstileToken } = await request.json();
 
     if (!email || !password || !name) {
       return NextResponse.json(
         { error: "Fehlende erforderliche Felder" },
+        { status: 400 }
+      );
+    }
+
+    const verification = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secret: process.env.TURNSTILE_SECRET_KEY,
+          response: turnstileToken,
+        }),
+      }
+    );
+    const verifyResult = await verification.json();
+    if (!verifyResult.success) {
+      return NextResponse.json(
+        { error: "Captcha-Verifizierung fehlgeschlagen." },
         { status: 400 }
       );
     }

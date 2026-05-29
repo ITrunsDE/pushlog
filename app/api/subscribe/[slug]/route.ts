@@ -22,7 +22,6 @@ export async function POST(
 
   const product = await db.product.findFirst({
     where: { slug },
-    include: { _count: { select: { subscribers: true } } },
   });
 
   if (!product) {
@@ -41,7 +40,7 @@ export async function POST(
 
   const { email, frequency } = parsed.data;
 
-  // Check plan limit
+  // Check plan limit using confirmed subscribers only
   const user = await db.user.findUnique({
     where: { id: product.userId },
     select: { plan: true },
@@ -52,11 +51,16 @@ export async function POST(
   }
 
   const limit = getSubscriberLimit(user.plan);
-  if (product._count.subscribers >= limit) {
-    return NextResponse.json(
-      { error: "Subscriber limit reached for this plan" },
-      { status: 403 }
-    );
+  if (limit !== Infinity) {
+    const confirmedCount = await db.subscriber.count({
+      where: { productId: product.id, confirmedAt: { not: null } },
+    });
+    if (confirmedCount >= limit) {
+      return NextResponse.json(
+        { error: "subscriber_limit_reached" },
+        { status: 403 }
+      );
+    }
   }
 
   // Check if already subscribed

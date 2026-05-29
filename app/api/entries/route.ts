@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getEntryLimit } from "@/lib/plan";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,21 @@ export async function POST(request: NextRequest) {
         { error: "Product not found or unauthorized" },
         { status: 403 }
       );
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+
+    const entryLimit = getEntryLimit(user?.plan ?? "free");
+    if (entryLimit !== Infinity) {
+      const entryCount = await db.changelogEntry.count({
+        where: { productId: validatedData.productId },
+      });
+      if (entryCount >= entryLimit) {
+        return NextResponse.json({ error: "entry_limit_reached" }, { status: 403 });
+      }
     }
 
     const entry = await db.changelogEntry.create({

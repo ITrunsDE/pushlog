@@ -16,16 +16,27 @@ export async function POST(req: NextRequest) {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Get all confirmed subscribers
+  // Get all confirmed subscribers with their product's owner plan
   const subscribers = await db.subscriber.findMany({
     where: { confirmedAt: { not: null } },
-    include: { product: true },
+    include: {
+      product: {
+        include: { user: { select: { plan: true } } },
+      },
+    },
   });
 
   let sentCount = 0;
   let skippedCount = 0;
 
   for (const subscriber of subscribers) {
+    // Free plan owners can only send monthly digests
+    const ownerPlan = subscriber.product.user.plan;
+    if (ownerPlan === "free" && subscriber.digestFrequency === "weekly") {
+      skippedCount++;
+      continue;
+    }
+
     // Check if should send based on frequency
     const lastSent = subscriber.lastDigestSentAt;
     const shouldSendWeekly =

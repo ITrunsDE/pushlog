@@ -18,3 +18,21 @@ export function getSubscriberLimit(plan: string): number {
   };
   return limits[plan] ?? 0;
 }
+
+export function getEntryLimit(plan: string): number {
+  const limits: Record<string, number> = {
+    free: 25,
+    solo: Infinity,
+    pro: Infinity,
+  };
+  return limits[plan] ?? 0;
+}
+
+export function getAiLimit(plan: string): number {
+  const limits: Record<string, number> = {
+    free: 5,
+    solo: Infinity,
+    pro: Infinity,
+  };
+  return limits[plan] ?? 0;
+}

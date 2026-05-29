@@ -7,6 +7,7 @@ interface Category {
   name: string;
   label: string;
   color: string;
+  locked?: boolean;
 }
 
 interface Entry {
@@ -172,8 +173,8 @@ export default function EditEntryPage() {
             className="w-full px-4 py-2 bg-[#fffdf8] border border-[#FAC775] rounded-lg text-[#2C2B28] focus:outline-none focus:ring-2 focus:ring-[#BA7517]"
           >
             {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.label}
+              <option key={cat.name} value={cat.name} disabled={cat.locked && cat.name !== category}>
+                {cat.locked ? `[Pro] ${cat.label}` : cat.label}
               </option>
             ))}
           </select>

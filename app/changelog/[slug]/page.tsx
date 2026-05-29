@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import SubscribeForm from "./_components/subscribe-form";
+import EntriesList from "./_components/entries-list";
 import { canUseFeature } from "@/lib/plan";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +16,7 @@ interface ChangelogPageProps {
   }>;
 }
 
-const categoryColors: Record<string, { bg: string; text: string }> = {
-  New: { bg: "#085041", text: "#9FE1CB" },
-  Fix: { bg: "#FAEEDA", text: "#633806" },
-  Improved: { bg: "#085041", text: "#9FE1CB" },
-  Removed: { bg: "#FFE4E1", text: "#8B0000" },
-};
+const builtInCategories = new Set(["New", "Fix", "Improved", "Removed"]);
 
 export default async function ChangelogPage({ params, searchParams }: ChangelogPageProps) {
   const { slug } = await params;
@@ -29,7 +25,15 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
   const product = await db.product.findFirst({
     where: { slug },
     include: {
-      user: { select: { plan: true } },
+      user: {
+        select: {
+          plan: true,
+          customCategories: {
+            where: { deletedAt: null },
+            select: { id: true, name: true, label: true },
+          },
+        },
+      },
       entries: {
         where: { isPublished: true },
         orderBy: { publishedAt: "desc" },
@@ -42,18 +46,19 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
   }
 
   const plan = product.user.plan;
-  const builtInCategories = new Set(Object.keys(categoryColors));
-  const entries = canUseFeature(plan, "custom_categories")
+  const isPro = canUseFeature(plan, "custom_categories");
+  const entries = isPro
     ? product.entries
     : product.entries.filter((e) => builtInCategories.has(e.category));
+  const customCategories = isPro ? product.user.customCategories : [];
   const showBranding = !canUseFeature(plan, "white_label");
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen flex flex-col"
       style={{ backgroundColor: "#fffdf8" }}
     >
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="flex-1 max-w-2xl w-full mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
           <h1
@@ -95,86 +100,28 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
         )}
 
         {/* Entries */}
-        <div className="space-y-6 mb-12">
-          {entries.length === 0 ? (
-            <div
-              style={{ color: "#854F0B" }}
-              className="text-center py-12"
-            >
-              <p>Noch keine Einträge veröffentlicht</p>
-            </div>
-          ) : (
-            entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-lg p-6 border"
-                style={{
-                  backgroundColor: "#fef9ee",
-                  borderColor: "#FAC775",
-                }}
-              >
-                {/* Category Badge + Title */}
-                <div className="flex items-center gap-3 mb-3">
-                  <span
-                    className="text-[10px] font-medium px-2.5 py-0.5 rounded-full whitespace-nowrap"
-                    style={{
-                      backgroundColor: categoryColors[entry.category]?.bg || "#000",
-                      color: categoryColors[entry.category]?.text || "#fff",
-                    }}
-                  >
-                    {entry.category}
-                  </span>
-                  <h2
-                    className="text-lg font-medium flex-1"
-                    style={{ color: "#412402" }}
-                  >
-                    {entry.title}
-                  </h2>
-                </div>
-
-                {/* Body */}
-                <div
-                  className="text-sm leading-relaxed whitespace-pre-wrap mb-4"
-                  style={{ color: "#412402" }}
-                >
-                  {entry.body}
-                </div>
-
-                {/* Date */}
-                <div
-                  className="text-xs"
-                  style={{ color: "#BA7517" }}
-                >
-                  {entry.publishedAt
-                    ? new Date(entry.publishedAt).toLocaleDateString("de-DE", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
-                    : "Kein Datum"}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <EntriesList entries={entries} customCategories={customCategories} isPro={isPro} />
 
         {/* Subscribe Form */}
-        <SubscribeForm slug={slug} />
-
-        {showBranding && (
-          <div className="mt-10 pt-6 text-center" style={{ borderTop: "1px solid #FAC775" }}>
-            <a
-              href="https://pushlog.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs"
-              style={{ color: "#BA7517" }}
-            >
-              Powered by Pushlog
-            </a>
-          </div>
-        )}
+        <SubscribeForm slug={slug} ownerPlan={plan} />
       </div>
+
+      {showBranding && (
+        <div
+          className="w-full py-4 text-center border-t"
+          style={{ backgroundColor: "#fef9ee", borderColor: "#FAC775" }}
+        >
+          <a
+            href="https://pushlog.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs"
+            style={{ color: "#BA7517" }}
+          >
+            Powered by Pushlog
+          </a>
+        </div>
+      )}
     </div>
   );
 }

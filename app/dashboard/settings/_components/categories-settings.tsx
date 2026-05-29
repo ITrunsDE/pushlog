@@ -9,6 +9,7 @@ interface Category {
   color: string;
   isCustom?: boolean;
   id?: string;
+  locked?: boolean;
 }
 
 interface CategoriesSettingsProps {
@@ -32,10 +33,8 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
   const isPro = plan === "pro";
 
   useEffect(() => {
-    if (isPro) {
-      fetchCategories();
-    }
-  }, [isPro]);
+    fetchCategories();
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -97,19 +96,34 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
   const customCategories = categories.filter((cat) => cat.isCustom);
   const customCount = customCategories.length;
+  const lockedCount = categories.filter((cat) => cat.locked).length;
 
   return (
     <div className="border-t border-[#FAC775] pt-8 mt-8">
       <h2 className="text-lg font-semibold text-[#2C2B28] mb-2">Kategorien</h2>
 
-      {!isPro && (
+      {!isPro && lockedCount > 0 && (
+        <div className="mb-6 p-4 bg-[#fef9ee] border border-[#FAC775] rounded-lg">
+          <p className="text-sm text-[#633806] mb-3">
+            You have {lockedCount} custom {lockedCount === 1 ? "category" : "categories"} from your Pro plan. Upgrade to Pro to use them again.
+          </p>
+          <a
+            href="/pricing"
+            className="inline-block px-4 py-2 bg-[#BA7517] text-white text-sm font-medium rounded-lg hover:bg-[#9d6414] transition-colors"
+          >
+            Upgrade to Pro
+          </a>
+        </div>
+      )}
+
+      {!isPro && lockedCount === 0 && (
         <div className="mb-6 p-4 bg-[#FEF9EE] border border-[#FAC775] rounded-lg">
           <p className="text-sm text-[#633806] mb-3">
             Eigene Kategorien sind ein Pro-Feature. Upgrade auf Pro, um benutzerdefinierte
             Kategorien zu erstellen.
           </p>
           <a
-            href="/dashboard/settings"
+            href="/pricing"
             className="inline-block px-4 py-2 bg-[#BA7517] text-white text-sm font-medium rounded-lg hover:bg-[#9d6414] transition-colors"
           >
             Upgrade auf Pro
@@ -126,7 +140,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
         <div className="space-y-2">
           {categories.map((cat) => (
-            <div key={`${cat.name}-${cat.isCustom ? cat.id : "std"}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div key={`${cat.name}-${cat.isCustom ? cat.id : "std"}`} className={`flex items-center gap-3 p-3 rounded-lg ${cat.locked ? "bg-[#fef9ee] opacity-60" : "bg-gray-50"}`}>
               <div
                 className="w-4 h-4 rounded"
                 style={{ backgroundColor: cat.color }}
@@ -135,6 +149,9 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
                 <span className="text-sm font-medium text-[#2C2B28]">{cat.label}</span>
                 {!cat.isCustom && (
                   <span className="ml-2 text-xs text-[#633806]">(Standard)</span>
+                )}
+                {cat.locked && (
+                  <span className="ml-2 text-xs text-[#BA7517]">(Pro)</span>
                 )}
               </div>
               {isPro && cat.isCustom && (
