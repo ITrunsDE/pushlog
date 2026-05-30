@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-
-const categoryColors: Record<string, { bg: string; text: string }> = {
-  New: { bg: "#085041", text: "#9FE1CB" },
-  Fix: { bg: "#FAEEDA", text: "#633806" },
-  Improved: { bg: "#085041", text: "#9FE1CB" },
-  Removed: { bg: "#FFE4E1", text: "#8B0000" },
-};
+import { categoryBadgeClass } from "@/lib/badge-colors";
 
 type Entry = {
   id: string;
@@ -85,11 +79,7 @@ export default function EntriesList({ entries, customCategories, isPro }: Props)
           >
             <div className="flex items-center gap-3 mb-3">
               <span
-                className="text-[10px] font-medium px-2.5 py-0.5 rounded-full whitespace-nowrap"
-                style={{
-                  backgroundColor: categoryColors[entry.category]?.bg || "#000",
-                  color: categoryColors[entry.category]?.text || "#fff",
-                }}
+                className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${categoryBadgeClass(entry.category)}`}
               >
                 {entry.category}
               </span>

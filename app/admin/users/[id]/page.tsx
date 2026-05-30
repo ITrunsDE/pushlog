@@ -5,6 +5,7 @@ import { Divider } from '@/app/admin/_components/ui/divider'
 import { Badge } from '@/app/admin/_components/ui/badge'
 import { Avatar } from '@/app/admin/_components/ui/avatar'
 import { StatCard } from '@/app/admin/_components/stat-card'
+import { categoryBadgeClass } from '@/lib/badge-colors'
 import {
   Table,
   TableBody,
@@ -182,7 +183,9 @@ export default async function UserDetailPage({
               <TableCell>{entry.title}</TableCell>
               <TableCell className="text-zinc-500">{entry.product.name}</TableCell>
               <TableCell>
-                <Badge>{entry.category}</Badge>
+                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${categoryBadgeClass(entry.category)}`}>
+                  {entry.category}
+                </span>
               </TableCell>
               <TableCell className="text-zinc-500">
                 {formatDate(entry.publishedAt)}

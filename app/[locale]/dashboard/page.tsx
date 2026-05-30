@@ -81,6 +81,8 @@ export default function DashboardPage() {
         const data = await res.json();
         if (data.error === "ai_limit_reached") {
           setLimitBanner("ai_limit_reached");
+          const userRes = await fetch("/api/user/me");
+          if (userRes.ok) setUserInfo(await userRes.json());
           return;
         }
       }
@@ -156,7 +158,7 @@ export default function DashboardPage() {
   })();
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       <div className="w-3/5 px-8 py-8 border-r border-[var(--border-soft)]">
         <h1 className="text-3xl font-medium text-[var(--text-dark)] mb-8 font-[family-name:var(--font-display)]">
           {t("newEntry")}
@@ -198,18 +200,26 @@ export default function DashboardPage() {
         </div>
 
         <div className="mb-6">
-          <button
-            onClick={handleImprove}
-            disabled={loadingAI}
-            className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
-          >
-            {loadingAI ? t("improving") : t("aiGenerate")}
-          </button>
-          {userInfo?.plan === "free" && userInfo.aiLimit !== null && (
-            <p className="text-xs text-[var(--text-mid)] mt-1.5 text-right">
-              {t("aiLimit", { used: userInfo.aiUsed, max: userInfo.aiLimit })}
-            </p>
-          )}
+          {(() => {
+            const aiLimitReached = userInfo?.plan === "free" && userInfo.aiLimit !== null && userInfo.aiUsed >= userInfo.aiLimit;
+            return (
+              <>
+                <button
+                  onClick={handleImprove}
+                  disabled={loadingAI || !!aiLimitReached}
+                  title={aiLimitReached ? `KI-Limit erreicht. Resets am ${nextMonthFirst}.` : undefined}
+                  className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
+                >
+                  {loadingAI ? t("improving") : t("aiGenerate")}
+                </button>
+                {userInfo?.plan === "free" && (
+                  <p className="text-xs text-[var(--text-mid)] mt-1.5 text-right">
+                    {t("aiLimit", { used: userInfo.aiUsed, max: userInfo.aiLimit ?? 0 })}
+                  </p>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {improved && (

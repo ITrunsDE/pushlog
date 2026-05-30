@@ -25,6 +25,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
       user: {
         select: {
           plan: true,
+          locked: true,
           customCategories: {
             where: { deletedAt: null },
             select: { id: true, name: true, label: true },
@@ -39,6 +40,23 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
   });
 
   if (!product) notFound();
+
+  if (product.user.locked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "var(--background)" }}>
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold mb-2"
+            style={{ color: "var(--text-dark)" }}>
+            Nicht verfügbar
+          </h1>
+          <p style={{ color: "var(--text-mid)" }}>
+            Diese Changelog-Seite ist derzeit nicht verfügbar.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const plan = product.user.plan;
   const isPro = canUseFeature(plan, "custom_categories");

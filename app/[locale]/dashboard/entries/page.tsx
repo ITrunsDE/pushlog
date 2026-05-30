@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { Link } from "@/lib/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
+import { categoryBadgeClass } from "@/lib/badge-colors";
 
 export default async function EntriesPage() {
   const t = await getTranslations("dashboard");
@@ -19,13 +20,6 @@ export default async function EntriesPage() {
       },
     },
   });
-
-  const categoryColors: Record<string, { bg: string; text: string }> = {
-    New: { bg: "#085041", text: "#9FE1CB" },
-    Fix: { bg: "#FAEEDA", text: "#633806" },
-    Improved: { bg: "#085041", text: "#9FE1CB" },
-    Removed: { bg: "#FFE4E1", text: "#8B0000" },
-  };
 
   return (
     <div className="px-8 py-8">
@@ -57,11 +51,7 @@ export default async function EntriesPage() {
                       <div className="flex items-center gap-2 mb-2 justify-between">
                         <div className="flex items-center gap-2">
                           <span
-                            className="text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap"
-                            style={{
-                              backgroundColor: categoryColors[entry.category]?.bg || "#000",
-                              color: categoryColors[entry.category]?.text || "#fff",
-                            }}
+                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${categoryBadgeClass(entry.category)}`}
                           >
                             {entry.category}
                           </span>
