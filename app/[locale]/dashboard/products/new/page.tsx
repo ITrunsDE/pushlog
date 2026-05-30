@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { canUseFeature } from "@/lib/plan";
 import { NewProductForm } from "./_components/new-product-form";
+import { getTranslations } from "next-intl/server";
 
 export default async function NewProductPage() {
   const session = await auth();
@@ -17,13 +18,15 @@ export default async function NewProductPage() {
     redirect("/dashboard/settings");
   }
 
+  const t = await getTranslations("dashboard");
+
   return (
     <div className="px-8 py-8 max-w-md">
       <h1 className="text-3xl font-medium text-[var(--text-dark)] font-[family-name:var(--font-display)] mb-2">
-        Neues Produkt
+        {t("newProductTitle")}
       </h1>
       <p className="text-[var(--text-mid)] mb-8">
-        Füge ein weiteres Produkt zu deinem Account hinzu.
+        {t("newProductSubtitle")}
       </p>
       <NewProductForm />
     </div>

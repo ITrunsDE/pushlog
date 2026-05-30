@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import type { Product } from "@prisma/client";
+import { useTranslations } from "next-intl";
 
 interface ProductSettingsProps {
   product: Product;
 }
 
 export default function ProductSettings({ product }: ProductSettingsProps) {
+  const t = useTranslations("dashboard");
   const router = useRouter();
   const [name, setName] = useState(product.name);
   const [slug, setSlug] = useState(product.slug);
@@ -29,7 +31,7 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
 
   const handleSave = async () => {
     if (!name.trim() || !slug.trim()) {
-      setError("Name und Slug erforderlich");
+      setError(t("nameSlugRequired"));
       return;
     }
 
@@ -46,14 +48,14 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Speichern");
+        throw new Error(data.error || t("genericError"));
       }
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+      setError(err instanceof Error ? err.message : t("genericError"));
     } finally {
       setSaving(false);
     }
@@ -69,15 +71,14 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
       if (!res.ok) {
         const data = await res.json();
         if (data.error === "last_product") {
-          setDeleteError("Das letzte Produkt kann nicht gelöscht werden.");
+          setDeleteError(t("lastProductError"));
         } else {
-          setDeleteError(data.error || "Fehler beim Löschen");
+          setDeleteError(data.error || t("deleteError"));
         }
         setShowDeleteDialog(false);
         return;
       }
 
-      // Clear active product cookie so next product is selected automatically
       await fetch("/api/products/switch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,7 +88,7 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setDeleteError("Ein unerwarteter Fehler ist aufgetreten");
+      setDeleteError(t("unexpectedError"));
       setShowDeleteDialog(false);
     } finally {
       setDeleting(false);
@@ -101,12 +102,12 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
         style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-soft)" }}
       >
         <h2 className="text-xl font-medium text-[var(--text-dark)] mb-6">
-          Produkt-Einstellungen
+          {t("productSettingsTitle")}
         </h2>
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
-            Produktname
+            {t("productName")}
           </label>
           <input
             type="text"
@@ -120,7 +121,7 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
             Slug
             <span className="block text-xs text-[var(--text-mid)] font-normal mt-1">
-              Ändert die öffentliche URL zu /changelog/{slug}
+              {t("slugChangeNotice", { slug })}
             </span>
           </label>
           <input
@@ -133,7 +134,7 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
-            Widget-Farbe
+            {t("widgetColor")}
           </label>
           <div className="flex items-center gap-3">
             <input
@@ -159,7 +160,7 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
 
         {success && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-6">
-            <p className="text-sm text-green-700">Gespeichert ✓</p>
+            <p className="text-sm text-green-700">{t("savedSuccess")}</p>
           </div>
         )}
 
@@ -168,16 +169,13 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
           disabled={saving}
           className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
         >
-          {saving ? "Wird gespeichert..." : "Speichern"}
+          {saving ? t("saving") : t("save")}
         </button>
       </div>
 
       <div className="mt-6 rounded-lg border border-red-200 p-6">
-        <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
-        <p className="mt-1 text-sm text-red-600">
-          Löscht dieses Produkt und alle zugehörigen Changelog-Einträge,
-          Sektionen und Subscriber unwiderruflich.
-        </p>
+        <h3 className="text-sm font-semibold text-red-700">{t("dangerZone")}</h3>
+        <p className="mt-1 text-sm text-red-600">{t("deleteProductWarning")}</p>
         {deleteError && (
           <p className="mt-2 text-sm text-red-700 font-medium">{deleteError}</p>
         )}
@@ -185,7 +183,7 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
           onClick={() => setShowDeleteDialog(true)}
           className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
         >
-          Produkt löschen
+          {t("deleteProduct")}
         </button>
       </div>
 
@@ -196,11 +194,10 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
             style={{ backgroundColor: "var(--surface)" }}
           >
             <h3 className="font-semibold" style={{ color: "var(--text-dark)" }}>
-              Produkt wirklich löschen?
+              {t("deleteProductConfirmTitle")}
             </h3>
             <p className="mt-2 text-sm" style={{ color: "var(--text-mid)" }}>
-              Alle Changelog-Einträge und Subscriber werden unwiderruflich gelöscht.
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {t("deleteProductConfirmBody")}
             </p>
             <div className="mt-4 flex gap-2 justify-end">
               <button
@@ -209,14 +206,14 @@ export default function ProductSettings({ product }: ProductSettingsProps) {
                 className="rounded-lg border px-4 py-2 text-sm transition-colors"
                 style={{ borderColor: "var(--border-soft)", color: "var(--text-mid)" }}
               >
-                Abbrechen
+                {t("cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
               >
-                {deleting ? "Wird gelöscht..." : "Endgültig löschen"}
+                {deleting ? t("deleting") : t("deleteConfirm")}
               </button>
             </div>
           </div>

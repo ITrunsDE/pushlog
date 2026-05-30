@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth();
+  const user = session?.user;
+
   return (
     <div className="min-h-screen bg-[var(--background)] font-sans">
       <div className="max-w-5xl mx-auto border-x border-[var(--border-soft)]">
@@ -17,15 +21,23 @@ export default function HomePage() {
           <Link href="/blog" className="hover:text-[var(--text-dark)] transition-colors">
             Blog
           </Link>
-          <Link href="/login" className="text-[var(--text-dark)] hover:text-[var(--text-mid)] transition-colors">
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="border border-[var(--border-strong)] rounded-lg px-3.5 py-1.5 text-xs text-[var(--text-mid)] hover:bg-[var(--surface)] transition-colors"
-          >
-            Start free
-          </Link>
+          {user ? (
+            <Link href="/dashboard" className="text-[var(--text-dark)] hover:text-[var(--text-mid)] transition-colors">
+              {user.name ?? user.email}
+            </Link>
+          ) : (
+            <Link href="/login" className="text-[var(--text-dark)] hover:text-[var(--text-mid)] transition-colors">
+              Login
+            </Link>
+          )}
+          {!user && (
+            <Link
+              href="/register"
+              className="border border-[var(--border-strong)] rounded-lg px-3.5 py-1.5 text-xs text-[var(--text-mid)] hover:bg-[var(--surface)] transition-colors"
+            >
+              Start free
+            </Link>
+          )}
         </div>
       </nav>
 
@@ -69,49 +81,45 @@ export default function HomePage() {
 
           {/* Entry 1 */}
           <div className="bg-[var(--background)] border border-[var(--border-soft)] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="bg-[#085041] text-[#9FE1CB] text-[10px] font-medium px-2.5 py-0.5 rounded-full">
-                New
-              </span>
-              <span className="text-sm font-medium text-[var(--text-dark)]">
-                AI changelog assistant
-              </span>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-sm font-medium text-[var(--text-dark)]">AI changelog assistant</span>
+              <span className="text-xs text-[var(--text-mid)]">v1.4</span>
             </div>
-            <p className="text-xs text-[var(--text-mid)] leading-relaxed">
-              Paste your bullet points and get a polished changelog in seconds.
-              Powered by GPT-4o mini.
-            </p>
-            <p className="text-[11px] text-[var(--primary)] mt-2.5">May 2025 · 3 min read</p>
+            <p className="text-[11px] text-[var(--primary)] mb-3">May 30, 2025</p>
+            <div className="mb-2.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 mb-1.5">
+                ✨ Features
+              </span>
+              <ul className="space-y-0.5">
+                <li className="text-xs text-[var(--text-dark)] pl-2">• Paste bullet points, AI writes the changelog</li>
+                <li className="text-xs text-[var(--text-dark)] pl-2">• Email digest sent automatically</li>
+              </ul>
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 mb-1.5">
+                🐛 Fixes
+              </span>
+              <ul>
+                <li className="text-xs text-[var(--text-dark)] pl-2">• Widget iframe rendering on Safari</li>
+              </ul>
+            </div>
           </div>
 
           {/* Entry 2 */}
-          <div className="bg-[var(--background)] border border-[var(--border-soft)] rounded-lg p-4 opacity-65">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-[#FAEEDA] text-[#633806] text-[10px] px-2.5 py-0.5 rounded-full">
-                Fix
-              </span>
-              <span className="text-sm font-medium text-[var(--text-dark)]">
-                Widget performance
-              </span>
+          <div className="bg-[var(--background)] border border-[var(--border-soft)] rounded-lg p-4 opacity-60">
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-sm font-medium text-[var(--text-dark)]">Widget performance</span>
+              <span className="text-xs text-[var(--text-mid)]">v1.3</span>
             </div>
-            <p className="text-xs text-[var(--text-mid)] leading-relaxed">
-              Reduced load time by 40% on the embeddable widget.
-            </p>
-          </div>
-
-          {/* Entry 3 */}
-          <div className="bg-[var(--background)] border border-[var(--border-soft)] rounded-lg p-4 opacity-35">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-[#085041] text-[#9FE1CB] text-[10px] px-2.5 py-0.5 rounded-full">
-                Improved
+            <p className="text-[11px] text-[var(--primary)] mb-3">May 12, 2025</p>
+            <div>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 mb-1.5">
+                ⚡ Improvements
               </span>
-              <span className="text-sm font-medium text-[var(--text-dark)]">
-                Email digest design
-              </span>
+              <ul>
+                <li className="text-xs text-[var(--text-dark)] pl-2">• Load time reduced by 40%</li>
+              </ul>
             </div>
-            <p className="text-xs text-[var(--text-mid)] leading-relaxed">
-              New template, better open rates.
-            </p>
           </div>
         </div>
       </section>
@@ -129,11 +137,11 @@ export default function HomePage() {
             height="22"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#2C2B28"
+            stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="mb-3"
+            className="mb-3 text-[var(--text-mid)]"
             aria-hidden="true"
           >
             <line x1="8" y1="6" x2="21" y2="6" />
@@ -162,11 +170,11 @@ export default function HomePage() {
             height="22"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#2C2B28"
+            stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="mb-3"
+            className="mb-3 text-[var(--text-mid)]"
             aria-hidden="true"
           >
             <path d="M12 3L9.5 9.5L3 12L9.5 14.5L12 21L14.5 14.5L21 12L14.5 9.5Z" />
@@ -190,11 +198,11 @@ export default function HomePage() {
             height="22"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#2C2B28"
+            stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="mb-3"
+            className="mb-3 text-[var(--text-mid)]"
             aria-hidden="true"
           >
             <line x1="22" y1="2" x2="11" y2="13" />

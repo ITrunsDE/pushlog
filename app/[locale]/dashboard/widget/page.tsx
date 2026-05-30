@@ -2,16 +2,19 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { WidgetClient } from "./_components/widget-client";
 import { getActiveProduct } from "@/lib/active-product";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function WidgetPage() {
   const session = await auth();
+  const t = await getTranslations("dashboard");
+
   if (!session?.user?.id) {
     return (
       <div className="px-8 py-8">
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">Unauthorized</p>
+          <p className="text-sm text-red-700">{t("unauthorized")}</p>
         </div>
       </div>
     );

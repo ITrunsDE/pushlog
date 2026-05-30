@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import type { User } from "@prisma/client";
+import { useTranslations } from "next-intl";
 
 interface AccountSettingsProps {
   user: User;
 }
 
 export default function AccountSettings({ user }: AccountSettingsProps) {
+  const t = useTranslations("dashboard");
   const [name, setName] = useState(user.name || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export default function AccountSettings({ user }: AccountSettingsProps) {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError("Name erforderlich");
+      setError(t("nameRequired"));
       return;
     }
 
@@ -32,13 +34,13 @@ export default function AccountSettings({ user }: AccountSettingsProps) {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Speichern");
+        throw new Error(data.error || t("loadingError"));
       }
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+      setError(err instanceof Error ? err.message : t("genericError"));
     } finally {
       setSaving(false);
     }
@@ -49,7 +51,7 @@ export default function AccountSettings({ user }: AccountSettingsProps) {
       className="rounded-lg p-6 border"
       style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-soft)" }}
     >
-      <h2 className="text-xl font-medium text-[var(--text-dark)] mb-6">Account</h2>
+      <h2 className="text-xl font-medium text-[var(--text-dark)] mb-6">{t("accountTitle")}</h2>
 
       <div className="mb-6">
         <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
@@ -71,9 +73,9 @@ export default function AccountSettings({ user }: AccountSettingsProps) {
           type="email"
           value={user.email || ""}
           disabled
-          className="w-full px-4 py-2 bg-[#f5f5f5] border border-[#e0e0e0] rounded-lg text-[#999] cursor-not-allowed"
+          className="w-full px-4 py-2 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-mid)] cursor-not-allowed"
         />
-        <p className="text-xs text-[var(--text-mid)] mt-1">Kann nicht geändert werden</p>
+        <p className="text-xs text-[var(--text-mid)] mt-1">{t("emailCannotChange")}</p>
       </div>
 
       {error && (
@@ -84,7 +86,7 @@ export default function AccountSettings({ user }: AccountSettingsProps) {
 
       {success && (
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-6">
-          <p className="text-sm text-green-700">Gespeichert ✓</p>
+          <p className="text-sm text-green-700">{t("savedSuccess")}</p>
         </div>
       )}
 
@@ -93,7 +95,7 @@ export default function AccountSettings({ user }: AccountSettingsProps) {
         disabled={saving}
         className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
       >
-        {saving ? "Wird gespeichert..." : "Speichern"}
+        {saving ? t("saving") : t("save")}
       </button>
     </div>
   );

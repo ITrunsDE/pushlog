@@ -174,7 +174,7 @@ export default function DashboardPage() {
 
     const validSections = sections.filter((s) => s.items.some((i) => i.trim()));
     if (validSections.length === 0) {
-      setError("Mindestens eine Sektion mit Inhalt erforderlich");
+      setError(t("sectionRequired"));
       return;
     }
 
@@ -249,9 +249,7 @@ export default function DashboardPage() {
 
         {productLocked && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
-            <p className="text-sm text-red-700">
-              Dieses Produkt ist gesperrt. Upgrade auf Pro, um alle Produkte wieder zu aktivieren.
-            </p>
+            <p className="text-sm text-red-700">{t("productLocked")}</p>
           </div>
         )}
 
@@ -285,7 +283,7 @@ export default function DashboardPage() {
           <textarea
             value={bulletPoints}
             onChange={(e) => setBulletPoints(e.target.value)}
-            placeholder={`- Login-Fehler bei langen E-Mail-Adressen behoben\n- Performance des Widgets verbessert\n- Neues Kategorie-System eingeführt`}
+            placeholder={t("bulletPointsPlaceholder")}
             className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none min-h-[120px]"
           />
         </div>
@@ -294,8 +292,8 @@ export default function DashboardPage() {
           <button
             onClick={handleStructureWithAI}
             disabled={loadingAI || !!aiLimitReached}
-            title={aiLimitReached ? `KI-Limit erreicht. Resets am ${nextMonthFirst}.` : undefined}
-            className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
+            title={aiLimitReached ? t("aiLimitTitle", { date: nextMonthFirst }) : undefined}
+            className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--background)] font-medium py-2.5 rounded-lg transition"
           >
             {loadingAI ? t("improving") : t("aiGenerate")}
           </button>
@@ -327,14 +325,14 @@ export default function DashboardPage() {
             type="text"
             value={version}
             onChange={(e) => setVersion(e.target.value)}
-            placeholder="z.B. 2.1.0"
+            placeholder={t("versionPlaceholder")}
             className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
           />
         </div>
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-3">
-            Sektionen
+            {t("sections")}
           </label>
           <div className="space-y-4">
             {sections.map((section, i) => (
@@ -364,7 +362,7 @@ export default function DashboardPage() {
                     onClick={() => removeSection(i)}
                     className="ml-auto text-xs text-red-500 hover:text-red-700 transition"
                   >
-                    Sektion entfernen
+                    {t("removeSection")}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -373,7 +371,7 @@ export default function DashboardPage() {
                       <input
                         value={item}
                         onChange={(e) => updateItem(i, j, e.target.value)}
-                        placeholder="Item beschreiben..."
+                        placeholder={t("itemPlaceholder")}
                         className="flex-1 px-3 py-1.5 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] text-sm placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                       />
                       <button
@@ -398,7 +396,7 @@ export default function DashboardPage() {
             onClick={addSection}
             className="mt-3 w-full py-2 border border-dashed border-[var(--border-soft)] rounded-lg text-sm text-[var(--text-mid)] hover:text-[var(--text-dark)] hover:border-[var(--primary)] transition"
           >
-            + Sektion hinzufügen
+            {t("addSection")}
           </button>
         </div>
 
@@ -416,7 +414,7 @@ export default function DashboardPage() {
         <button
           onClick={handlePublish}
           disabled={publishing || !canPublish}
-          className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
+          className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--background)] font-medium py-2.5 rounded-lg transition"
         >
           {publishing ? t("publishing") : t("publish")}
         </button>

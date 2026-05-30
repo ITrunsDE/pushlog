@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface Category {
   name: string;
@@ -29,6 +30,7 @@ const EMOJI_SUGGESTIONS = [
 ];
 
 export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
+  const t = useTranslations("dashboard");
   const [categories, setCategories] = useState<Category[]>(STANDARD_CATEGORIES);
   const [newCategory, setNewCategory] = useState({ name: "", label: "", color: "#BA7517", icon: "📌" });
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +46,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
   const fetchCategories = async () => {
     try {
       const res = await fetch("/api/categories");
-      if (!res.ok) throw new Error("Failed to fetch categories");
+      if (!res.ok) throw new Error(t("fetchCategoriesError"));
       const data = await res.json();
       setCategories(data);
     } catch (err) {
@@ -69,14 +71,14 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to create category");
+        throw new Error(data.error || t("createCategoryError"));
       }
 
       setNewCategory({ name: "", label: "", color: "#BA7517", icon: "📌" });
-      setSuccess("Category added successfully");
+      setSuccess(t("categoryAdded"));
       fetchCategories();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create category");
+      setError(err instanceof Error ? err.message : t("createCategoryError"));
     } finally {
       setIsLoading(false);
     }
@@ -90,12 +92,12 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
     try {
       const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete category");
+      if (!res.ok) throw new Error(t("deleteCategoryError"));
 
-      setSuccess("Category deleted successfully");
+      setSuccess(t("categoryDeleted"));
       fetchCategories();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete category");
+      setError(err instanceof Error ? err.message : t("deleteCategoryError"));
     }
   };
 
@@ -105,18 +107,18 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
   return (
     <div className="border-t border-[var(--border-soft)] pt-8 mt-8">
-      <h2 className="text-lg font-semibold text-[var(--text-dark)] mb-2">Kategorien</h2>
+      <h2 className="text-lg font-semibold text-[var(--text-dark)] mb-2">{t("categoriesTitle")}</h2>
 
       {!isPro && lockedCount > 0 && (
         <div className="mb-6 p-4 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg">
           <p className="text-sm text-[var(--text-mid)] mb-3">
-            You have {lockedCount} custom {lockedCount === 1 ? "category" : "categories"} from your Pro plan. Upgrade to Pro to use them again.
+            {t("lockedCategoriesMsg", { count: lockedCount })}
           </p>
           <a
             href="/pricing"
             className="inline-block px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--text-mid)] transition-colors"
           >
-            Upgrade to Pro
+            {t("upgradeToProLink")}
           </a>
         </div>
       )}
@@ -124,14 +126,13 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
       {!isPro && lockedCount === 0 && (
         <div className="mb-6 p-4 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg">
           <p className="text-sm text-[var(--text-mid)] mb-3">
-            Eigene Kategorien sind ein Pro-Feature. Upgrade auf Pro, um benutzerdefinierte
-            Kategorien zu erstellen.
+            {t("customCategoriesProMsg")}
           </p>
           <a
             href="/pricing"
             className="inline-block px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--text-mid)] transition-colors"
           >
-            Upgrade auf Pro
+            {t("upgradeToProLink")}
           </a>
         </div>
       )}
@@ -139,15 +140,15 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
       <div className="space-y-4 mb-6">
         <p className="text-sm text-[var(--text-mid)]">
           {isPro
-            ? `Standard-Kategorien (keine Änderungen) + ${customCount} von 10 benutzerdefinierten Kategorien`
-            : "Standard-Kategorien"}
+            ? t("customCategoriesCount", { count: customCount })
+            : t("standardCategoriesLabel")}
         </p>
 
         <div className="space-y-2">
           {categories.map((cat) => (
             <div
               key={`${cat.name}-${cat.isCustom ? cat.id : "std"}`}
-              className={`flex items-center gap-3 p-3 rounded-lg ${cat.locked ? "bg-[var(--surface)] opacity-60" : "bg-gray-50"}`}
+              className={`flex items-center gap-3 p-3 rounded-lg ${cat.locked ? "bg-[var(--surface)] opacity-60" : "bg-[var(--background)]"}`}
             >
               <div className="w-4 h-4 rounded" style={{ backgroundColor: cat.color }} />
               <div className="flex-1">
@@ -155,7 +156,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
                   {cat.icon && cat.isCustom ? `${cat.icon} ` : ""}{cat.label}
                 </span>
                 {!cat.isCustom && (
-                  <span className="ml-2 text-xs text-[var(--text-mid)]">(Standard)</span>
+                  <span className="ml-2 text-xs text-[var(--text-mid)]">{t("standardBadge")}</span>
                 )}
                 {cat.locked && (
                   <span className="ml-2 text-xs text-[var(--primary)]">(Pro)</span>
@@ -165,7 +166,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
                 <button
                   onClick={() => cat.id && handleDeleteCategory(cat.id)}
                   className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title="Delete category"
+                  title={t("deleteCategory")}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -177,7 +178,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
       {isPro && (
         <form onSubmit={handleAddCategory} className="p-4 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg">
-          <h3 className="text-sm font-semibold text-[var(--text-dark)] mb-4">Neue Kategorie hinzufügen</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-dark)] mb-4">{t("addCategoryTitle")}</h3>
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
@@ -194,7 +195,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-[var(--text-mid)] mb-1">
-                Icon
+                {t("iconLabel")}
               </label>
               <div className="flex items-center gap-2 flex-wrap">
                 <input
@@ -222,7 +223,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
             <div>
               <label className="block text-xs font-medium text-[var(--text-mid)] mb-1">
-                Name (z.B. "breaking")
+                {t("nameExample")}
               </label>
               <input
                 type="text"
@@ -236,7 +237,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
             <div>
               <label className="block text-xs font-medium text-[var(--text-mid)] mb-1">
-                Label (z.B. "Breaking Change")
+                {t("labelExample")}
               </label>
               <input
                 type="text"
@@ -249,7 +250,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
             <div>
               <label className="block text-xs font-medium text-[var(--text-mid)] mb-1">
-                Farbe
+                {t("colorLabel")}
               </label>
               <input
                 type="color"
@@ -264,7 +265,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
               disabled={isLoading || customCount >= 10}
               className="w-full px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? "Wird hinzugefügt..." : "Kategorie hinzufügen"}
+              {isLoading ? t("addingCategory") : t("addCategory")}
             </button>
           </div>
         </form>

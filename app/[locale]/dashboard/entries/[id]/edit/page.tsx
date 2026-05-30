@@ -150,7 +150,7 @@ export default function EditEntryPage() {
 
     const validSections = sections.filter((s) => s.items.some((i) => i.trim()));
     if (validSections.length === 0) {
-      setError("Mindestens eine Sektion mit Inhalt erforderlich");
+      setError(t("sectionRequired"));
       return;
     }
 
@@ -234,14 +234,14 @@ export default function EditEntryPage() {
             type="text"
             value={version}
             onChange={(e) => setVersion(e.target.value)}
-            placeholder="z.B. 2.1.0"
+            placeholder={t("versionPlaceholder")}
             className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
           />
         </div>
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-3">
-            Sektionen
+            {t("sections")}
           </label>
           <div className="space-y-4">
             {sections.map((section, i) => (
@@ -271,7 +271,7 @@ export default function EditEntryPage() {
                     onClick={() => removeSection(i)}
                     className="ml-auto text-xs text-red-500 hover:text-red-700 transition"
                   >
-                    Sektion entfernen
+                    {t("removeSection")}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -280,7 +280,7 @@ export default function EditEntryPage() {
                       <input
                         value={item}
                         onChange={(e) => updateItem(i, j, e.target.value)}
-                        placeholder="Item beschreiben..."
+                        placeholder={t("itemPlaceholder")}
                         className="flex-1 px-3 py-1.5 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] text-sm placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                       />
                       <button
@@ -305,7 +305,7 @@ export default function EditEntryPage() {
             onClick={addSection}
             className="mt-3 w-full py-2 border border-dashed border-[var(--border-soft)] rounded-lg text-sm text-[var(--text-mid)] hover:text-[var(--text-dark)] hover:border-[var(--primary)] transition"
           >
-            + Sektion hinzufügen
+            {t("addSection")}
           </button>
         </div>
 

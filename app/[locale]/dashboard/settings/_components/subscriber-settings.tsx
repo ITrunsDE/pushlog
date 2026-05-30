@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getSubscriberLimit } from "@/lib/plan";
+import { getTranslations } from "next-intl/server";
 
 interface SubscriberSettingsProps {
   productId: string;
@@ -10,6 +11,8 @@ export default async function SubscriberSettings({
   productId,
   plan,
 }: SubscriberSettingsProps) {
+  const t = await getTranslations("dashboard");
+
   const subscriberCount = await db.subscriber.count({
     where: {
       productId,
@@ -26,14 +29,14 @@ export default async function SubscriberSettings({
         className="text-lg font-medium mb-4"
         style={{ color: "var(--text-dark)" }}
       >
-        Newsletter-Abonnenten
+        {t("newsletterSubscribers")}
       </h2>
 
       <div className="space-y-4">
         <div>
           <div className="flex justify-between mb-2">
             <span style={{ color: "var(--text-mid)" }} className="text-sm">
-              Bestätigte Abonnenten
+              {t("confirmedSubscribers")}
             </span>
             <span style={{ color: "var(--primary)" }} className="text-sm font-medium">
               {subscriberCount} / {limit === Infinity ? "∞" : limit}
@@ -59,25 +62,25 @@ export default async function SubscriberSettings({
         <div style={{ color: "var(--text-mid)" }} className="text-xs">
           {plan === "free" && (
             <p>
-              Kostenlos: Bis zu 50 Abonnenten. <br />
+              {t("freePlanSubscribersInfo")} <br />
               <a href="/dashboard/settings?upgrade=true" style={{ color: "var(--primary)" }} className="underline">
-                Auf Solo oder Pro upgraden
+                {t("upgradeSoloOrPro")}
               </a>{" "}
-              für mehr Platz.
+              {t("forMoreSpace")}
             </p>
           )}
           {plan === "solo" && (
             <p>
-              Solo Plan: Bis zu 500 Abonnenten. <br />
+              {t("soloPlanSubscribersInfo")} <br />
               <a href="/dashboard/settings?upgrade=true" style={{ color: "var(--primary)" }} className="underline">
-                Auf Pro upgraden
+                {t("upgradeToPro")}
               </a>{" "}
-              für unbegrenzten Zugang.
+              {t("forUnlimitedAccess")}
             </p>
           )}
           {plan === "pro" && (
             <p>
-              Pro Plan: Unbegrenzte Abonnenten. 🎉
+              {t("proPlanSubscribersInfo")}
             </p>
           )}
         </div>

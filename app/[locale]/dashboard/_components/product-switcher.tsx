@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { ChevronDown, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface Product {
   id: string;
@@ -19,6 +20,7 @@ interface ProductSwitcherProps {
 
 export function ProductSwitcher({ products, activeProduct, isPro }: ProductSwitcherProps) {
   const router = useRouter();
+  const t = useTranslations("dashboard");
   const [open, setOpen] = useState(false);
 
   async function switchProduct(id: string) {
@@ -73,7 +75,7 @@ export function ProductSwitcher({ products, activeProduct, isPro }: ProductSwitc
               >
                 <span className="flex-1 truncate text-left">{p.name}</span>
                 {!p.isActive && (
-                  <span className="ml-auto text-xs text-red-500">Gesperrt</span>
+                  <span className="ml-auto text-xs text-red-500">{t("locked")}</span>
                 )}
               </button>
             ))}
@@ -90,7 +92,7 @@ export function ProductSwitcher({ products, activeProduct, isPro }: ProductSwitc
                   style={{ color: "var(--text-mid)" }}
                 >
                   <Plus className="size-4" />
-                  Neues Produkt
+                  {t("newProduct")}
                 </button>
               </>
             )}

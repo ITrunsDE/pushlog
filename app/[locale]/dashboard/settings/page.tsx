@@ -8,6 +8,7 @@ import { CategoriesSettings } from "./_components/categories-settings";
 import SubscriberSettings from "./_components/subscriber-settings";
 import { getActiveProduct } from "@/lib/active-product";
 import { SettingsTabs } from "./_components/settings-tabs";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export default async function SettingsPage({
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+
+  const t = await getTranslations("dashboard");
 
   const [user, product] = await Promise.all([
     db.user.findUnique({ where: { id: session.user.id } }),
@@ -30,9 +33,9 @@ export default async function SettingsPage({
     return (
       <div className="px-8 py-8">
         <h1 className="text-3xl font-medium text-[var(--text-dark)] font-[family-name:var(--font-display)] mb-2">
-          Einstellungen
+          {t("settings")}
         </h1>
-        <p className="text-[var(--text-mid)]">Daten nicht gefunden</p>
+        <p className="text-[var(--text-mid)]">{t("settingsDataNotFound")}</p>
       </div>
     );
   }
@@ -40,22 +43,22 @@ export default async function SettingsPage({
   const tabs = [
     {
       id: "produkt",
-      label: "Produkt",
+      label: t("tabProduct"),
       content: <ProductSettings product={product} />,
     },
     {
       id: "kategorien",
-      label: "Kategorien",
+      label: t("tabCategories"),
       content: <CategoriesSettings plan={user.plan} />,
     },
     {
       id: "abonnenten",
-      label: "Abonnenten",
+      label: t("tabSubscribers"),
       content: <SubscriberSettings productId={product.id} plan={user.plan} />,
     },
     {
       id: "account",
-      label: "Account",
+      label: t("tabAccount"),
       content: (
         <div className="space-y-6">
           <PlanSettings user={user} />
@@ -68,9 +71,9 @@ export default async function SettingsPage({
   return (
     <div className="px-8 py-8 max-w-2xl">
       <h1 className="text-3xl font-medium text-[var(--text-dark)] font-[family-name:var(--font-display)] mb-2">
-        Einstellungen
+        {t("settings")}
       </h1>
-      <p className="text-[var(--text-mid)] mb-8">Verwalte dein Produkt und deinen Account</p>
+      <p className="text-[var(--text-mid)] mb-8">{t("settingsSubtitle")}</p>
 
       <SettingsTabs tabs={tabs} defaultTab={params.tab ?? "produkt"} />
     </div>

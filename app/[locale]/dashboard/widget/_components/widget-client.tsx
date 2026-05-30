@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 declare global {
   interface Window {
@@ -9,7 +10,11 @@ declare global {
   }
 }
 
+type Tab = "popup" | "inline";
+
 export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null; userPlan?: string }) {
+  const t = useTranslations("dashboard");
+  const [activeTab, setActiveTab] = useState<Tab>("popup");
   const [copied, setCopied] = useState(false);
   const [freeLoaded, setFreeLoaded] = useState(false);
   const [proCopied, setProCopied] = useState(false);
@@ -22,6 +27,10 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
 
   const proScriptTag = slug
     ? `<script src="https://pushlog.io/widget-pro.js" data-product="${slug}" data-style="popup" data-position="bottom-right" data-limit="5" data-category="feature"><\/script>`
+    : "";
+
+  const inlineSnippet = slug
+    ? `<div id="my-changelog"></div>\n<script src="https://pushlog.io/widget-pro.js" data-product="${slug}" data-style="inline" data-target="#my-changelog" data-limit="3"><\/script>`
     : "";
 
   const handleCopyCode = async () => {
@@ -38,7 +47,6 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
   const handleLoadFreePreview = () => {
     if (!slug) return;
 
-    // Clean up old widget if reloading
     if (freeLoaded) {
       delete window.__pushlogFreeLoaded;
       const existingScript = document.querySelector(
@@ -57,7 +65,6 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
       return;
     }
 
-    // Inject free widget script
     const script = document.createElement("script");
     const host = typeof window !== "undefined" ? window.location.origin : "https://pushlog.io";
     script.src = `${host}/widget.js`;
@@ -81,12 +88,9 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
   const handleLoadProPreview = () => {
     if (!slug) return;
 
-    // Clean up old widget if reloading
     if (proLoaded) {
       delete window.__pushlogProLoaded;
-      const existingScript = document.querySelector(
-        'script[src*="widget-pro.js"]'
-      );
+      const existingScript = document.querySelector('script[src*="widget-pro.js"]');
       if (existingScript) existingScript.remove();
 
       const target = document.getElementById("pushlog-pro-preview");
@@ -99,7 +103,6 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
       return;
     }
 
-    // Inject pro widget script AFTER checking target exists
     setTimeout(() => {
       const targetDiv = document.getElementById("pushlog-pro-preview");
       if (!targetDiv) {
@@ -124,226 +127,204 @@ export function WidgetClient({ slug, userPlan = "free" }: { slug: string | null;
     return (
       <div className="px-8 py-8">
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">
-            Kein Produkt gefunden. Bitte erstelle zunächst ein Produkt.
-          </p>
+          <p className="text-sm text-red-700">{t("noProductFound")}</p>
         </div>
       </div>
     );
   }
 
+  const tabs = [
+    { id: "popup" as Tab, label: "Popup Widget" },
+    { id: "inline" as Tab, label: "Inline Snippet" },
+  ];
+
   return (
-    <div className="px-8 py-8 max-w-4xl">
+    <div className="px-8 py-8 max-w-2xl">
       <h1 className="text-3xl font-medium text-[var(--text-dark)] mb-2 font-[family-name:var(--font-display)]">
-        Embeddable Widget
+        {t("widgetTitle")}
       </h1>
       <p className="text-[var(--text-mid)] text-sm mb-8">
-        Integriere dein Pushlog Widget auf jeder Website
+        {t("widgetSubtitle")}
       </p>
 
-      {/* Free Widget Section */}
-      <div className="mb-12">
-        <h2 className="text-xl font-medium text-[var(--text-dark)] mb-4">Free Widget</h2>
-        <p className="text-[var(--text-mid)] text-sm mb-4">
-          Kopiere diesen Code und füge ihn auf deiner Website ein. Das Widget
-          wird automatisch in der unteren rechten Ecke angezeigt mit einer Glocken-Button.
-        </p>
+      <div className="flex gap-1 border-b mb-6" style={{ borderColor: "var(--border-soft)" }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === tab.id ? "border-[var(--primary)]" : "border-transparent"
+            }`}
+            style={{ color: activeTab === tab.id ? "var(--primary)" : "var(--text-mid)" }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg p-4 mb-4">
-          <div className="relative">
-            <code className="text-[var(--text-dark)] text-sm font-mono block break-all">
-              {freeScriptTag}
-            </code>
-            <button
-              onClick={handleCopyCode}
-              className="absolute top-2 right-2 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-xs font-medium rounded transition"
-            >
-              {copied ? "✓ Kopiert!" : "Kopieren"}
-            </button>
-          </div>
-        </div>
-
-        <p className="text-xs text-[var(--text-mid)] mb-4">
-          Slug: <span className="font-mono font-medium">{slug}</span>
-        </p>
-
-        <button
-          onClick={handleLoadFreePreview}
-          className="px-6 py-2.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white font-medium rounded-lg transition"
-        >
-          {freeLoaded ? "✓ Free Preview laden" : "Free Preview laden"}
-        </button>
-
-        {freeLoaded && (
-          <div className="mt-4 p-4 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg">
-            <p className="text-xs text-[var(--text-mid)]">
-              Das Widget sollte jetzt in der unteren rechten Ecke des Fensters
-              sichtbar sein (Glocken-Button 🔔). Klicke darauf um das Popup zu öffnen.
+      {activeTab === "popup" && (
+        <div className="space-y-6">
+          <div>
+            <p className="text-sm text-[var(--text-mid)] mb-4">
+              {t("widgetCopyInstructions")}
             </p>
-          </div>
-        )}
-      </div>
 
-      {/* Features Section */}
-      <div className="mb-12">
-        <h2 className="text-xl font-medium text-[var(--text-dark)] mb-4">Features</h2>
-        <ul className="space-y-2 text-sm text-[var(--text-mid)]">
-          <li className="flex gap-3">
-            <span className="text-[var(--primary)]">✓</span>
-            <span>Automatische Badge mit Anzahl neuer Updates</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-[var(--primary)]">✓</span>
-            <span>Read-Status wird lokal gespeichert (keine Datenerfassung)</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-[var(--primary)]">✓</span>
-            <span>Responsive Popup mit allen Einträgen</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-[var(--primary)]">✓</span>
-            <span>Zero-Dependency, Performance-optimiert</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-[var(--primary)]">✓</span>
-            <span>Passt sich automatisch der Amber Design an</span>
-          </li>
-        </ul>
-      </div>
-
-      {/* Pro Features Section */}
-      {isPro ? (
-        <div>
-          <h2 className="text-xl font-medium text-[var(--text-dark)] mb-4">Pro Features</h2>
-          <p className="text-[var(--text-mid)] text-sm mb-4">
-            Mit deinem Pro-Plan hast du Zugriff auf erweiterte Konfigurationsoptionen:
-          </p>
-
-          {/* Pro Attributes Table */}
-          <div className="mb-8 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border-soft)]">
-                  <th className="text-left py-2 px-3 text-[var(--text-dark)] font-semibold">Attribut</th>
-                  <th className="text-left py-2 px-3 text-[var(--text-dark)] font-semibold">Werte</th>
-                  <th className="text-left py-2 px-3 text-[var(--text-dark)] font-semibold">Beschreibung</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-[var(--border-soft)]">
-                  <td className="py-2 px-3 text-[var(--text-mid)] font-mono">data-style</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">"popup", "inline"</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">Darstellungsweise des Widgets</td>
-                </tr>
-                <tr className="border-b border-[var(--border-soft)]">
-                  <td className="py-2 px-3 text-[var(--text-mid)] font-mono">data-limit</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">1-10</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">Max. Anzahl der Einträge</td>
-                </tr>
-                <tr className="border-b border-[var(--border-soft)]">
-                  <td className="py-2 px-3 text-[var(--text-mid)] font-mono">data-category</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">"feature", "fix", "improvement", "security"</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">Filter nach Kategorie</td>
-                </tr>
-                <tr>
-                  <td className="py-2 px-3 text-[var(--text-mid)] font-mono">data-position</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">"bottom-right", "bottom-left"</td>
-                  <td className="py-2 px-3 text-[var(--text-mid)]">Position des Popup-Buttons (nur bei data-style="popup")</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pro Code Snippet */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-[var(--text-dark)] mb-3">Pro Snippet Beispiel</h3>
-            <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg p-4 mb-4">
-              <div className="relative">
+            <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg p-4 mb-3">
+              <div className="relative pr-20">
                 <code className="text-[var(--text-dark)] text-sm font-mono block break-all">
-                  {proScriptTag}
+                  {freeScriptTag}
                 </code>
                 <button
-                  onClick={handleCopyProCode}
-                  className="absolute top-2 right-2 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-xs font-medium rounded transition"
+                  onClick={handleCopyCode}
+                  className="absolute top-0 right-0 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-xs font-medium rounded transition"
                 >
-                  {proCopied ? "✓ Kopiert!" : "Kopieren"}
+                  {copied ? t("copied") : t("copy")}
                 </button>
               </div>
             </div>
 
-            <h3 className="text-lg font-medium text-[var(--text-dark)] mb-3 mt-6">Inline Style Beispiel</h3>
-            <p className="text-[var(--text-mid)] text-sm mb-3">
-              Mit <code className="font-mono bg-[var(--surface)] px-2 py-1 rounded">data-style="inline"</code> wird das Widget als Liste direkt auf der Website eingebunden:
+            <p className="text-xs text-[var(--text-mid)]">
+              Slug: <span className="font-mono font-medium">{slug}</span>
             </p>
-            <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg p-4 mb-4">
-              <div className="relative">
-                <code className="text-[var(--text-dark)] text-sm font-mono block break-all">
-                  {`<div id="my-changelog"><\/div>\n<script src="https://pushlog.io/widget-pro.js" data-product="${slug}" data-style="inline" data-target="#my-changelog" data-limit="3"><\/script>`}
-                </code>
-              </div>
-            </div>
           </div>
 
-          {/* Pro Preview Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-[var(--text-dark)] mb-3">Inline Preview</h3>
-            <p className="text-[var(--text-mid)] text-sm mb-4">
-              Sieh dir hier eine Vorschau des Inline-Styles an:
-            </p>
+          <div>
+            <h2 className="text-sm font-medium text-[var(--text-dark)] mb-3">{t("widgetFeatures")}</h2>
+            <ul className="space-y-2 text-sm text-[var(--text-mid)]">
+              <li className="flex gap-3">
+                <span className="text-[var(--primary)]">✓</span>
+                <span>{t("badgeFeature")}</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[var(--primary)]">✓</span>
+                <span>{t("readStatusFeature")}</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[var(--primary)]">✓</span>
+                <span>{t("responsivePopupFeature")}</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[var(--primary)]">✓</span>
+                <span>{t("zeroDependencyFeature")}</span>
+              </li>
+            </ul>
+          </div>
 
+          <div>
             <button
-              onClick={handleLoadProPreview}
-              className="px-6 py-2.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white font-medium rounded-lg transition mb-4"
+              onClick={handleLoadFreePreview}
+              className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-sm font-medium rounded-lg transition"
             >
-              {proLoaded ? "✓ Pro Preview laden" : "Pro Preview laden"}
+              {freeLoaded ? t("hidePreview") : t("loadPreview")}
             </button>
-
-            <div className="mt-4">
-              <p className="text-xs text-[var(--text-mid)] mb-3">
-                Pro Widget Inline Preview:
+            {freeLoaded && (
+              <p className="mt-3 text-xs text-[var(--text-mid)]">
+                {t("widgetVisibleInfo")}
               </p>
-              <div
-                id="pushlog-pro-preview"
-                className={`min-h-[300px] border border-[var(--border-soft)] rounded-lg overflow-y-auto ${
-                  proLoaded ? "bg-[var(--background)]" : "bg-gray-100"
-                }`}
-              ></div>
-            </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div className="p-4 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg">
-          <h2 className="text-lg font-medium text-[var(--text-dark)] mb-3">
-            🎯 Upgrade zu Pro für erweiterte Features
-          </h2>
-          <p className="text-[var(--text-mid)] text-sm mb-4">
-            Mit einem Pro-Plan erhältst du:
-          </p>
-          <ul className="space-y-2 text-sm text-[var(--text-mid)] mb-4">
-            <li className="flex gap-3">
-              <span className="text-[var(--primary)]">✓</span>
-              <span>Inline-Style Widget (direkt auf der Website)</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--primary)]">✓</span>
-              <span>Konfigurierbare Widget-Position</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--primary)]">✓</span>
-              <span>Kategorie-Filter für Updates</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--primary)]">✓</span>
-              <span>Bis zu 10 Einträge anzeigen (statt 5)</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--primary)]">✓</span>
-              <span>Kein "Powered by Pushlog" Footer</span>
-            </li>
-          </ul>
-          <button className="px-6 py-2.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white font-medium rounded-lg transition">
-            Jetzt upgraden
-          </button>
+      )}
+
+      {activeTab === "inline" && (
+        <div className="space-y-6">
+          {isPro ? (
+            <>
+              <div>
+                <p className="text-sm text-[var(--text-mid)] mb-4">
+                  {t("widgetInlineInstructions")}
+                </p>
+
+                <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg p-4 mb-3">
+                  <div className="relative pr-20">
+                    <code className="text-[var(--text-dark)] text-sm font-mono block break-all whitespace-pre-wrap">
+                      {inlineSnippet}
+                    </code>
+                    <button
+                      onClick={handleCopyProCode}
+                      className="absolute top-0 right-0 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-xs font-medium rounded transition"
+                    >
+                      {proCopied ? t("copied") : t("copy")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-sm font-medium text-[var(--text-dark)] mb-3">{t("widgetConfiguration")}</h2>
+                <div className="border border-[var(--border-soft)] rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b" style={{ borderColor: "var(--border-soft)", backgroundColor: "var(--surface)" }}>
+                        <th className="text-left py-2 px-3 text-xs font-medium text-[var(--text-mid)]">{t("configAttr")}</th>
+                        <th className="text-left py-2 px-3 text-xs font-medium text-[var(--text-mid)]">{t("configValues")}</th>
+                        <th className="text-left py-2 px-3 text-xs font-medium text-[var(--text-mid)]">{t("configDesc")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { attr: "data-style", values: '"popup", "inline"', desc: t("configStyleDesc") },
+                        { attr: "data-limit", values: "1–10", desc: t("configLimitDesc") },
+                        { attr: "data-category", values: '"feature", "fix", …', desc: t("configCategoryDesc") },
+                        { attr: "data-position", values: '"bottom-right", "bottom-left"', desc: t("configPositionDesc") },
+                      ].map((row, i, arr) => (
+                        <tr
+                          key={row.attr}
+                          className={i < arr.length - 1 ? "border-b" : ""}
+                          style={{ borderColor: "var(--border-soft)" }}
+                        >
+                          <td className="py-2 px-3 font-mono text-xs text-[var(--text-mid)]">{row.attr}</td>
+                          <td className="py-2 px-3 text-xs text-[var(--text-mid)]">{row.values}</td>
+                          <td className="py-2 px-3 text-xs text-[var(--text-mid)]">{row.desc}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-sm font-medium text-[var(--text-dark)] mb-3">{t("widgetPreview")}</h2>
+                <button
+                  onClick={handleLoadProPreview}
+                  className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-sm font-medium rounded-lg transition mb-4"
+                >
+                  {proLoaded ? t("hidePreview") : t("loadPreview")}
+                </button>
+                <div
+                  id="pushlog-pro-preview"
+                  className={`min-h-[200px] border border-[var(--border-soft)] rounded-lg overflow-y-auto ${
+                    proLoaded ? "bg-[var(--background)]" : "bg-[var(--surface)]"
+                  }`}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="p-5 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg">
+              <h2 className="text-sm font-medium text-[var(--text-dark)] mb-2">
+                {t("proFeatureTitle")}
+              </h2>
+              <p className="text-sm text-[var(--text-mid)] mb-4">
+                {t("proFeatureDesc")}
+              </p>
+              <ul className="space-y-2 text-sm text-[var(--text-mid)] mb-5">
+                {[
+                  t("inlineStyleFeature"),
+                  t("configurablePositionFeature"),
+                  t("moreEntriesFeature"),
+                  t("noPoweredByFeature"),
+                ].map((feature) => (
+                  <li key={feature} className="flex gap-3">
+                    <span className="text-[var(--primary)]">✓</span>
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--text-mid)] text-white text-sm font-medium rounded-lg transition">
+                {t("upgradeNow")}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

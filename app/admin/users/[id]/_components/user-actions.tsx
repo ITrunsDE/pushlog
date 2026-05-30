@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogActions, DialogBody, DialogTitle } from '@/app/admin/_components/ui/dialog'
 
-const outlineBtn = "rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-zinc-950/5 disabled:opacity-50"
+const outlineBtn = "rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm font-medium text-zinc-950 dark:text-white hover:bg-zinc-950/5 dark:hover:bg-white/10 disabled:opacity-50"
 const dangerBtn = "rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
 
 const PLANS = ['free', 'solo', 'pro'] as const
@@ -79,7 +79,7 @@ export function UserActions({ userId, currentPlan, isLocked }: Props) {
           value={plan}
           disabled={loading === 'plan'}
           onChange={(e) => handlePlanChange(e.target.value)}
-          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-950 focus:outline-none"
+          className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm font-medium text-zinc-950 dark:text-white dark:bg-zinc-800 focus:outline-none"
         >
           {PLANS.map((p) => (
             <option key={p} value={p}>

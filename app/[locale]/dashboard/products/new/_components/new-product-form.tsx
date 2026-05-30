@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
+import { useTranslations } from "next-intl";
 
 export function NewProductForm() {
+  const t = useTranslations("dashboard");
   const router = useRouter();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,8 +28,8 @@ export function NewProductForm() {
         const data = await res.json();
         setError(
           data.error === "upgrade_required"
-            ? "Mehrere Produkte sind nur im Pro-Plan verfügbar."
-            : data.error || "Fehler beim Erstellen des Produkts"
+            ? t("multipleProductsUpgrade")
+            : data.error || t("createProductError")
         );
         return;
       }
@@ -43,7 +45,7 @@ export function NewProductForm() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Ein unerwarteter Fehler ist aufgetreten");
+      setError(t("unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -53,7 +55,7 @@ export function NewProductForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
-          Produktname
+          {t("productName")}
         </label>
         <input
           type="text"
@@ -77,7 +79,7 @@ export function NewProductForm() {
         disabled={loading || !name.trim()}
         className="w-full py-2.5 bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition"
       >
-        {loading ? "Wird erstellt..." : "Produkt erstellen"}
+        {loading ? t("creating") : t("createProduct")}
       </button>
     </form>
   );
