@@ -20,6 +20,7 @@ model User {
 
   // Custom Pushlog fields
   plan                     String    @default("free")
+  locked                   Boolean   @default(false)
   theme                    String    @default("system")
   stripeCustomerId         String?
   aiGenerationsThisMonth   Int       @default(0)

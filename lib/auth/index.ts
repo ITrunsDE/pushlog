@@ -34,6 +34,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
         if (!isPasswordValid) throw new Error("CredentialsSignin");
 
+        if (user.locked) throw new Error("AccountLocked");
+
         return {
           id: user.id,
           email: user.email,

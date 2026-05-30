@@ -22,7 +22,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const { plan } = await req.json();
-  const user = await db.user.update({ where: { id }, data: { plan } });
+  const body = await req.json();
+  const data: { plan?: string; locked?: boolean } = {};
+  if (body.plan !== undefined) data.plan = body.plan;
+  if (body.locked !== undefined) data.locked = body.locked;
+  const user = await db.user.update({ where: { id }, data });
   return Response.json(user);
 }
