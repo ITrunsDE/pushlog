@@ -12,7 +12,8 @@ const forgotPasswordSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email } = forgotPasswordSchema.parse(body);
+    const { email: rawEmail } = forgotPasswordSchema.parse(body);
+    const email = rawEmail.toLowerCase();
 
     // Try to find user (but don't leak info - always return 200)
     const user = await db.user.findUnique({

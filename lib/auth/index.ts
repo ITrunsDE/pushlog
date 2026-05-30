@@ -23,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!result.success) throw new Error("Invalid credentials");
 
         const user = await db.user.findUnique({
-          where: { email: result.data.email },
+          where: { email: result.data.email.toLowerCase() },
         });
 
         if (!user || !user.password) throw new Error("CredentialsSignin");
