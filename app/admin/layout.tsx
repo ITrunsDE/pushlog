@@ -13,12 +13,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <html lang="de">
-      <body>
-        <SidebarLayout navbar={<div />} sidebar={<AdminSidebar />}>
-          {children}
-        </SidebarLayout>
-      </body>
-    </html>
+    <SidebarLayout navbar={<div />} sidebar={<AdminSidebar />}>
+      {children}
+    </SidebarLayout>
   )
 }
