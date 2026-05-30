@@ -1,11 +1,43 @@
 {
   "permissions": {
-    "defaultMode": "dontAsk"
+    "defaultMode": "dontAsk",
+    "allow": [
+      "Edit"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "sandbox": {
     "network": {
-      "allowedDomains": ["localhost", "127.0.0.1"]
+      "allowedDomains": [
+        "localhost",
+        "127.0.0.1"
+      ]
     }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat >/dev/null || true; git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph update --skip-flows --repo \"/Users/sebastianselig/Projects/Pushlog\" || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat >/dev/null || true; git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph status --repo \"/Users/sebastianselig/Projects/Pushlog\" || echo 'Not a git repo, skipping'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

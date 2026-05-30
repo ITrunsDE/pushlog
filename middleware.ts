@@ -9,7 +9,7 @@ const intlMiddleware = createMiddleware({
   locales,
   defaultLocale,
   localePrefix: "as-needed",
-  localeDetection: false,
+  localeDetection: true,
 });
 
 export default auth((req) => {
@@ -18,6 +18,11 @@ export default auth((req) => {
 
   // Admin-Pfade direkt durchlassen
   if (pathname.startsWith("/admin")) {
+    return NextResponse.next();
+  }
+
+  // RSC-Requests (Next.js interne Fetches) durchlassen – nicht redirecten
+  if (req.headers.get("RSC") === "1") {
     return NextResponse.next();
   }
 
