@@ -14,6 +14,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    trustHostHeader: true,
+  },
 };
 
 export default withNextIntl(nextConfig);
