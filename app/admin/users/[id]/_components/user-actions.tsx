@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/app/admin/_components/ui/button'
+import { useRouter } from 'next/navigation'
 import { Dialog, DialogActions, DialogBody, DialogTitle } from '@/app/admin/_components/ui/dialog'
+
+const outlineBtn = "rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-zinc-950/5 disabled:opacity-50"
+const dangerBtn = "rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
 
 const PLANS = ['free', 'solo', 'pro'] as const
 
@@ -13,6 +16,7 @@ type Props = {
 }
 
 export function UserActions({ userId, currentPlan, isLocked }: Props) {
+  const router = useRouter()
   const [plan, setPlan] = useState(currentPlan)
   const [locked, setLocked] = useState(isLocked)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -25,7 +29,10 @@ export function UserActions({ userId, currentPlan, isLocked }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan: newPlan }),
     })
-    if (res.ok) setPlan(newPlan)
+    if (res.ok) {
+      setPlan(newPlan)
+      router.refresh()
+    }
     setLoading(null)
   }
 
@@ -43,7 +50,10 @@ export function UserActions({ userId, currentPlan, isLocked }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ locked: !locked }),
     })
-    if (res.ok) setLocked(!locked)
+    if (res.ok) {
+      setLocked(!locked)
+      router.refresh()
+    }
     setLoading(null)
   }
 
@@ -64,7 +74,7 @@ export function UserActions({ userId, currentPlan, isLocked }: Props) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 mt-6 items-center">
+      <div className="flex flex-wrap items-center gap-2 mt-6">
         <select
           value={plan}
           disabled={loading === 'plan'}
@@ -78,21 +88,23 @@ export function UserActions({ userId, currentPlan, isLocked }: Props) {
           ))}
         </select>
 
-        <Button outline onClick={handlePasswordReset} disabled={!!loading}>
+        <button className={outlineBtn} onClick={handlePasswordReset} disabled={!!loading}>
           {loading === 'reset' ? '…' : 'Passwort zurücksetzen'}
-        </Button>
+        </button>
 
-        <Button outline onClick={handleToggleLock} disabled={!!loading}>
+        <button className={outlineBtn} onClick={handleToggleLock} disabled={!!loading}>
           {loading === 'lock' ? '…' : locked ? 'Entsperren' : 'Sperren'}
-        </Button>
+        </button>
 
-        <Button outline onClick={handleImpersonate} disabled={!!loading}>
+        <button className={outlineBtn} onClick={handleImpersonate} disabled={!!loading}>
           {loading === 'imp' ? '…' : 'Login as'}
-        </Button>
+        </button>
+      </div>
 
-        <Button color="red" onClick={() => setShowDeleteDialog(true)} disabled={!!loading}>
-          Löschen
-        </Button>
+      <div className="mt-2">
+        <button className={dangerBtn} onClick={() => setShowDeleteDialog(true)} disabled={!!loading}>
+          Benutzer löschen
+        </button>
       </div>
 
       <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
@@ -103,12 +115,16 @@ export function UserActions({ userId, currentPlan, isLocked }: Props) {
           </p>
         </DialogBody>
         <DialogActions>
-          <Button outline onClick={() => setShowDeleteDialog(false)}>
+          <button className={outlineBtn} onClick={() => setShowDeleteDialog(false)}>
             Abbrechen
-          </Button>
-          <Button color="red" onClick={handleDelete} disabled={loading === 'delete'}>
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading === 'delete'}
+            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+          >
             {loading === 'delete' ? '…' : 'Endgültig löschen'}
-          </Button>
+          </button>
         </DialogActions>
       </Dialog>
     </>
