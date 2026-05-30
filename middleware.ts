@@ -1,4 +1,5 @@
 import createMiddleware from "next-intl/middleware";
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
 const locales = ["en", "de"] as const;
@@ -13,6 +14,10 @@ const intlMiddleware = createMiddleware({
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
+
+  if (pathname.startsWith("/admin")) {
+    return NextResponse.next();
+  }
 
   // Handle locale-prefixed routes for non-default locales
   for (const locale of locales) {

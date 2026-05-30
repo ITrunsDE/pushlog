@@ -23,15 +23,15 @@ export function AdminSidebar() {
       <SidebarBody>
         <SidebarSection>
           <SidebarItem href="/admin/users">
-            <UsersIcon data-slot="icon" />
+            <UsersIcon className="size-5 shrink-0 fill-zinc-500" data-slot="icon" />
             <SidebarLabel>Benutzer</SidebarLabel>
           </SidebarItem>
         </SidebarSection>
       </SidebarBody>
       <SidebarFooter>
         <SidebarItem href="/dashboard">
-          <ArrowLeftIcon data-slot="icon" />
-          <SidebarLabel>Zurück zum Dashboard</SidebarLabel>
+          <ArrowLeftIcon className="size-5 shrink-0 fill-zinc-500" data-slot="icon" />
+          <SidebarLabel>Dashboard</SidebarLabel>
         </SidebarItem>
       </SidebarFooter>
     </Sidebar>
