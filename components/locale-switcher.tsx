@@ -9,8 +9,8 @@ export function LocaleSwitcher() {
   const next = locale === "en" ? "de" : "en";
 
   function switchLocale() {
-    // Hard reload to reset RSC state tree — router.replace sends stale
-    // Next-Router-State-Tree header which causes a redirect loop on locale switch
+    // Set NEXT_LOCALE cookie so next-intl prioritizes it over Accept-Language header
+    document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=31536000; SameSite=Lax`;
     window.location.href = next === "de" ? `/de${pathname}` : pathname;
   }
 
