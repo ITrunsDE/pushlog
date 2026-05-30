@@ -7,13 +7,14 @@ import PlanSettings from "./_components/plan-settings";
 import { CategoriesSettings } from "./_components/categories-settings";
 import SubscriberSettings from "./_components/subscriber-settings";
 import { getActiveProduct } from "@/lib/active-product";
+import { SettingsTabs } from "./_components/settings-tabs";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string }>;
+  searchParams: Promise<{ success?: string; tab?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -24,7 +25,6 @@ export default async function SettingsPage({
   ]);
 
   const params = await searchParams;
-  const showSuccess = params.success === "true";
 
   if (!user || !product) {
     return (
@@ -37,6 +37,34 @@ export default async function SettingsPage({
     );
   }
 
+  const tabs = [
+    {
+      id: "produkt",
+      label: "Produkt",
+      content: <ProductSettings product={product} />,
+    },
+    {
+      id: "kategorien",
+      label: "Kategorien",
+      content: <CategoriesSettings plan={user.plan} />,
+    },
+    {
+      id: "abonnenten",
+      label: "Abonnenten",
+      content: <SubscriberSettings productId={product.id} plan={user.plan} />,
+    },
+    {
+      id: "account",
+      label: "Account",
+      content: (
+        <div className="space-y-6">
+          <PlanSettings user={user} />
+          <AccountSettings user={user} />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="px-8 py-8 max-w-2xl">
       <h1 className="text-3xl font-medium text-[var(--text-dark)] font-[family-name:var(--font-display)] mb-2">
@@ -44,19 +72,7 @@ export default async function SettingsPage({
       </h1>
       <p className="text-[var(--text-mid)] mb-8">Widget-Code & Produkteinstellungen</p>
 
-      {showSuccess && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-6">
-          <p className="text-sm text-green-700">✓ Plan erfolgreich aktualisiert!</p>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        <PlanSettings user={user} />
-        <ProductSettings product={product} />
-        <SubscriberSettings productId={product.id} plan={user.plan} />
-        <AccountSettings user={user} />
-        <CategoriesSettings plan={user.plan} />
-      </div>
+      <SettingsTabs tabs={tabs} defaultTab={params.tab ?? "produkt"} />
     </div>
   );
 }
