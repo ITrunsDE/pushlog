@@ -16,6 +16,7 @@ interface CustomCategory {
   id: string;
   name: string;
   label: string;
+  icon?: string;
 }
 
 const STANDARD_TYPES = [
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
+  const [productLocked, setProductLocked] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [limitBanner, setLimitBanner] = useState<"entry_limit_reached" | "ai_limit_reached" | null>(null);
@@ -57,15 +59,23 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, categoriesRes, userRes] = await Promise.all([
-          fetch("/api/products/me"),
+        const [activeRes, categoriesRes, userRes] = await Promise.all([
+          fetch("/api/products/active"),
           fetch("/api/categories"),
           fetch("/api/user/me"),
         ]);
 
-        if (productsRes.ok) {
-          const productData = (await productsRes.json()) as Array<{ id: string }>;
-          if (productData.length > 0) setProductId(productData[0].id);
+        if (activeRes.ok) {
+          const productData = (await activeRes.json()) as { id: string; isActive: boolean };
+          setProductId(productData.id);
+          setProductLocked(productData.isActive === false);
+        } else {
+          // Fallback for new users: auto-create via /api/products/me
+          const meRes = await fetch("/api/products/me");
+          if (meRes.ok) {
+            const productData = (await meRes.json()) as Array<{ id: string }>;
+            if (productData.length > 0) setProductId(productData[0].id);
+          }
         }
 
         if (categoriesRes.ok) {
@@ -237,6 +247,14 @@ export default function DashboardPage() {
           {t("newEntry")}
         </h1>
 
+        {productLocked && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
+            <p className="text-sm text-red-700">
+              Dieses Produkt ist gesperrt. Upgrade auf Pro, um alle Produkte wieder zu aktivieren.
+            </p>
+          </div>
+        )}
+
         {limitBanner === "entry_limit_reached" && (
           <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg mb-6">
             <p className="text-sm text-amber-800">
@@ -338,7 +356,7 @@ export default function DashboardPage() {
                     {isPro &&
                       customCategories.map((c) => (
                         <option key={c.id} value={c.name}>
-                          {c.label}
+                          {c.icon ? `${c.icon} ${c.label}` : c.label}
                         </option>
                       ))}
                   </select>
@@ -427,11 +445,12 @@ export default function DashboardPage() {
               })}
             </p>
             {sections.map((section, i) => {
-              const config = SECTION_CONFIG[section.type] ?? {
-                label: section.type,
-                icon: "•",
-                color: "bg-zinc-100 text-zinc-700",
-              };
+              const custom = customCategories.find((c) => c.name === section.type);
+              const config = SECTION_CONFIG[section.type] ?? (
+                custom
+                  ? { label: custom.label, icon: custom.icon ?? "📌", color: "bg-zinc-100 text-zinc-700" }
+                  : { label: section.type, icon: "•", color: "bg-zinc-100 text-zinc-700" }
+              );
               const items = section.items.filter((item) => item.trim());
               if (items.length === 0) return null;
               return (

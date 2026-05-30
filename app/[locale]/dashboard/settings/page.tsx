@@ -6,6 +6,9 @@ import AccountSettings from "./_components/account-settings";
 import PlanSettings from "./_components/plan-settings";
 import { CategoriesSettings } from "./_components/categories-settings";
 import SubscriberSettings from "./_components/subscriber-settings";
+import { getActiveProduct } from "@/lib/active-product";
+
+export const dynamic = "force-dynamic";
 
 export default async function SettingsPage({
   searchParams,
@@ -15,8 +18,10 @@ export default async function SettingsPage({
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const user = await db.user.findUnique({ where: { id: session.user.id } });
-  const product = await db.product.findFirst({ where: { userId: session.user.id } });
+  const [user, product] = await Promise.all([
+    db.user.findUnique({ where: { id: session.user.id } }),
+    getActiveProduct(session.user.id),
+  ]);
 
   const params = await searchParams;
   const showSuccess = params.success === "true";

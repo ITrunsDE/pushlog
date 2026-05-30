@@ -22,6 +22,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
     include: {
       user: {
         select: {
+          id: true,
           plan: true,
           locked: true,
         },
@@ -53,6 +54,11 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
       </div>
     );
   }
+
+  const customCategories = await db.customCategory.findMany({
+    where: { userId: product.user.id, deletedAt: null },
+    select: { name: true, label: true, icon: true },
+  });
 
   const plan = product.user.plan;
   const showBranding = !canUseFeature(plan, "white_label");
@@ -98,7 +104,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
           </div>
         )}
 
-        <EntriesList entries={product.entries} />
+        <EntriesList entries={product.entries} customCategories={customCategories} />
         <SubscribeForm slug={slug} ownerPlan={plan} />
       </div>
 

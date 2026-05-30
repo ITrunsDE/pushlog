@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { WidgetClient } from "./_components/widget-client";
+import { getActiveProduct } from "@/lib/active-product";
 
 export const dynamic = "force-dynamic";
 
@@ -20,16 +21,14 @@ export default async function WidgetPage() {
   let userPlan: string = "free";
 
   try {
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { plan: true },
-    });
+    const [user, product] = await Promise.all([
+      db.user.findUnique({
+        where: { id: session.user.id },
+        select: { plan: true },
+      }),
+      getActiveProduct(session.user.id),
+    ]);
     if (user) userPlan = user.plan;
-
-    const product = await db.product.findFirst({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "asc" },
-    });
     if (product) slug = product.slug;
   } catch (error) {
     console.error("Error fetching product:", error);

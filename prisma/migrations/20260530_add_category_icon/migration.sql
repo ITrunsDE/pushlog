@@ -1,0 +1,1 @@
+ALTER TABLE "custom_category" ADD COLUMN IF NOT EXISTS "icon" TEXT NOT NULL DEFAULT '📌';

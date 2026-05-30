@@ -16,8 +16,15 @@ type Entry = {
   sections: EntrySection[];
 };
 
+type CustomCategoryConfig = {
+  name: string;
+  label: string;
+  icon: string;
+};
+
 type Props = {
   entries: Entry[];
+  customCategories?: CustomCategoryConfig[];
 };
 
 const SECTION_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
@@ -28,7 +35,17 @@ const SECTION_CONFIG: Record<string, { label: string; icon: string; color: strin
   performance: { label: "Performance",  icon: "🚀", color: "bg-purple-100 text-purple-700" },
 };
 
-export default function EntriesList({ entries }: Props) {
+function getSectionConfig(
+  type: string,
+  customCategories: CustomCategoryConfig[] = []
+) {
+  if (SECTION_CONFIG[type]) return SECTION_CONFIG[type];
+  const custom = customCategories.find((c) => c.name === type);
+  if (custom) return { label: custom.label, icon: custom.icon, color: "bg-zinc-100 text-zinc-700" };
+  return { label: type, icon: "📌", color: "bg-zinc-100 text-zinc-700" };
+}
+
+export default function EntriesList({ entries, customCategories = [] }: Props) {
   const t = useTranslations("changelog");
   const locale = useLocale();
 
@@ -70,11 +87,7 @@ export default function EntriesList({ entries }: Props) {
           </div>
 
           {entry.sections.map((section) => {
-            const config = SECTION_CONFIG[section.type] ?? {
-              label: section.type,
-              icon: "•",
-              color: "bg-zinc-100 text-zinc-700",
-            };
+            const config = getSectionConfig(section.type, customCategories);
             let items: string[] = [];
             try {
               items = JSON.parse(section.items);

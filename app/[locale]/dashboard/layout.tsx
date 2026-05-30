@@ -2,11 +2,14 @@ import { Link } from "@/lib/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { SidebarUserBlock } from "./_components/sidebar-user-block";
+import { ProductSwitcher } from "./_components/product-switcher";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeSync } from "@/components/theme-sync";
 import { getTranslations } from "next-intl/server";
 import { ExternalLink } from "lucide-react";
+import { getActiveProduct } from "@/lib/active-product";
+import { canUseFeature } from "@/lib/plan";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [t, tDash] = await Promise.all([
@@ -17,21 +20,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let userPlan = "free";
   let userTheme = "system";
-  let productSlug: string | null = null;
+  let products: { id: string; name: string; slug: string; isActive: boolean }[] = [];
+  let activeProduct: { id: string; name: string; slug: string; isActive: boolean } | null = null;
+
   if (session?.user?.id) {
-    const [user, product] = await Promise.all([
+    const [user, allProducts] = await Promise.all([
       db.user.findUnique({
         where: { id: session.user.id },
         select: { plan: true, theme: true },
       }),
-      db.product.findFirst({
+      db.product.findMany({
         where: { userId: session.user.id },
-        select: { slug: true },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, name: true, slug: true, isActive: true },
       }),
     ]);
     userPlan = user?.plan || "free";
     userTheme = user?.theme || "system";
-    productSlug = product?.slug ?? null;
+    products = allProducts;
+    activeProduct = await getActiveProduct(session.user.id);
   }
 
   const navItems = [
@@ -40,6 +47,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { href: "/dashboard/widget", label: t("widget") },
     { href: "/dashboard/settings", label: t("settings") },
   ];
+
+  const isPro = canUseFeature(userPlan, "multiple_products");
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -56,9 +65,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <LocaleSwitcher />
             </div>
           </div>
-          {productSlug && (
+          {activeProduct?.slug && (
             <a
-              href={`/changelog/${productSlug}`}
+              href={`/changelog/${activeProduct.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs flex items-center gap-1 hover:underline mt-1.5"
@@ -69,6 +78,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </a>
           )}
         </div>
+
+        {activeProduct && products.length > 0 && (
+          <div className="px-3 pt-4 pb-2 border-b border-[var(--border-soft)]">
+            <ProductSwitcher
+              products={products}
+              activeProduct={activeProduct}
+              isPro={isPro}
+            />
+          </div>
+        )}
+
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link

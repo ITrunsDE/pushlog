@@ -124,6 +124,29 @@ export async function POST(request: NextRequest) {
           });
 
           console.log(`Updated user ${user.id} plan to ${plan} (via subscription event)`);
+
+          if (plan === "pro") {
+            // Reactivate all products when upgrading to Pro
+            await db.product.updateMany({
+              where: { userId: user.id },
+              data: { isActive: true },
+            });
+          } else {
+            // Lock all products except the first when downgrading from Pro
+            const products = await db.product.findMany({
+              where: { userId: user.id },
+              orderBy: { createdAt: "asc" },
+              select: { id: true },
+            });
+            if (products.length > 1) {
+              const toDeactivate = products.slice(1).map((p) => p.id);
+              await db.product.updateMany({
+                where: { id: { in: toDeactivate } },
+                data: { isActive: false },
+              });
+              console.log(`Deactivated ${toDeactivate.length} extra products for user ${user.id}`);
+            }
+          }
         }
         break;
       }
@@ -145,6 +168,20 @@ export async function POST(request: NextRequest) {
           where: { id: user.id },
           data: { plan: "free" },
         });
+
+        // Lock extra products on cancellation
+        const products = await db.product.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "asc" },
+          select: { id: true },
+        });
+        if (products.length > 1) {
+          const toDeactivate = products.slice(1).map((p) => p.id);
+          await db.product.updateMany({
+            where: { id: { in: toDeactivate } },
+            data: { isActive: false },
+          });
+        }
 
         console.log(`Updated user ${user.id} plan to free`);
         break;

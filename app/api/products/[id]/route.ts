@@ -4,6 +4,40 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const product = await db.product.findFirst({
+      where: { id: params.id, userId: session.user.id },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const productCount = await db.product.count({
+      where: { userId: session.user.id },
+    });
+
+    if (productCount <= 1) {
+      return NextResponse.json({ error: "last_product" }, { status: 400 });
+    }
+
+    await db.product.delete({ where: { id: params.id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 const updateProductSchema = z.object({

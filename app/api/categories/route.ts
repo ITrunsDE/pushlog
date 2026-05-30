@@ -41,6 +41,7 @@ export async function GET(_req: Request) {
         name: cat.name,
         label: cat.label,
         color: cat.color,
+        icon: cat.icon,
         isCustom: true,
         id: cat.id,
         locked: !canUseCustom,
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, label, color } = body;
+    const { name, label, color, icon } = body;
 
     if (!name || !label || !color) {
       return NextResponse.json(
@@ -136,6 +137,7 @@ export async function POST(req: Request) {
           data: {
             label,
             color,
+            icon: icon || "📌",
             deletedAt: null,
           },
         })
@@ -145,6 +147,7 @@ export async function POST(req: Request) {
             name: slugifiedName,
             label,
             color,
+            icon: icon || "📌",
           },
         });
 

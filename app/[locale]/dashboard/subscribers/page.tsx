@@ -4,22 +4,23 @@ import { redirect } from "next/navigation";
 import { getSubscriberLimit } from "@/lib/plan";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/lib/navigation";
+import { getActiveProduct } from "@/lib/active-product";
 
 export default async function SubscribersPage() {
   const t = await getTranslations("dashboard");
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      plan: true,
-      products: { select: { id: true }, take: 1 },
-    },
-  });
+  const [user, activeProduct] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    }),
+    getActiveProduct(session.user.id),
+  ]);
 
-  const productId = user?.products[0]?.id;
   const plan = user?.plan ?? "free";
+  const productId = activeProduct?.id;
 
   let subscriberCount = 0;
   if (productId) {

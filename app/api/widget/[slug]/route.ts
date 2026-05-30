@@ -16,7 +16,7 @@ export async function GET(
       where: { slug },
       include: {
         user: {
-          select: { plan: true },
+          select: { id: true, plan: true },
         },
         entries: {
           where: {
@@ -51,6 +51,11 @@ export async function GET(
 
     const entries = product.entries.slice(0, limit);
 
+    const customCategories = await db.customCategory.findMany({
+      where: { userId: product.user.id, deletedAt: null },
+      select: { name: true, icon: true, label: true },
+    });
+
     const response = NextResponse.json(
       {
         product: {
@@ -59,6 +64,7 @@ export async function GET(
         },
         isPro,
         entries,
+        customCategories,
       },
       { status: 200 }
     );

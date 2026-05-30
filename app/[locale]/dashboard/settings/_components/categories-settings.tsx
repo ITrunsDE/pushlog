@@ -7,6 +7,7 @@ interface Category {
   name: string;
   label: string;
   color: string;
+  icon?: string;
   isCustom?: boolean;
   id?: string;
   locked?: boolean;
@@ -23,9 +24,13 @@ const STANDARD_CATEGORIES: Category[] = [
   { name: "security", label: "Security", color: "#22c55e" },
 ];
 
+const EMOJI_SUGGESTIONS = [
+  "🚀", "✨", "🐛", "⚡", "🔒", "🎨", "📦", "🔧", "💡", "🌟", "🔥", "💎",
+];
+
 export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
   const [categories, setCategories] = useState<Category[]>(STANDARD_CATEGORIES);
-  const [newCategory, setNewCategory] = useState({ name: "", label: "", color: "#BA7517" });
+  const [newCategory, setNewCategory] = useState({ name: "", label: "", color: "#BA7517", icon: "📌" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,7 +72,7 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
         throw new Error(data.error || "Failed to create category");
       }
 
-      setNewCategory({ name: "", label: "", color: "#BA7517" });
+      setNewCategory({ name: "", label: "", color: "#BA7517", icon: "📌" });
       setSuccess("Category added successfully");
       fetchCategories();
     } catch (err) {
@@ -140,13 +145,15 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
 
         <div className="space-y-2">
           {categories.map((cat) => (
-            <div key={`${cat.name}-${cat.isCustom ? cat.id : "std"}`} className={`flex items-center gap-3 p-3 rounded-lg ${cat.locked ? "bg-[var(--surface)] opacity-60" : "bg-gray-50"}`}>
-              <div
-                className="w-4 h-4 rounded"
-                style={{ backgroundColor: cat.color }}
-              />
+            <div
+              key={`${cat.name}-${cat.isCustom ? cat.id : "std"}`}
+              className={`flex items-center gap-3 p-3 rounded-lg ${cat.locked ? "bg-[var(--surface)] opacity-60" : "bg-gray-50"}`}
+            >
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: cat.color }} />
               <div className="flex-1">
-                <span className="text-sm font-medium text-[var(--text-dark)]">{cat.label}</span>
+                <span className="text-sm font-medium text-[var(--text-dark)]">
+                  {cat.icon && cat.isCustom ? `${cat.icon} ` : ""}{cat.label}
+                </span>
                 {!cat.isCustom && (
                   <span className="ml-2 text-xs text-[var(--text-mid)]">(Standard)</span>
                 )}
@@ -185,6 +192,34 @@ export function CategoriesSettings({ plan }: CategoriesSettingsProps) {
           )}
 
           <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-mid)] mb-1">
+                Icon
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  type="text"
+                  value={newCategory.icon}
+                  onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                  maxLength={2}
+                  className="w-16 text-center text-2xl rounded-lg border border-[var(--border-soft)] p-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  placeholder="📌"
+                />
+                <div className="flex flex-wrap gap-1">
+                  {EMOJI_SUGGESTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setNewCategory({ ...newCategory, icon: emoji })}
+                      className={`rounded p-1 text-lg hover:bg-zinc-100 transition-colors ${newCategory.icon === emoji ? "bg-zinc-100 ring-1 ring-zinc-300" : ""}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-[var(--text-mid)] mb-1">
                 Name (z.B. "breaking")
