@@ -6,20 +6,32 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeSync } from "@/components/theme-sync";
 import { getTranslations } from "next-intl/server";
+import { ExternalLink } from "lucide-react";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const t = await getTranslations("nav");
+  const [t, tDash] = await Promise.all([
+    getTranslations("nav"),
+    getTranslations("dashboard"),
+  ]);
   const session = await auth();
 
   let userPlan = "free";
   let userTheme = "system";
+  let productSlug: string | null = null;
   if (session?.user?.id) {
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { plan: true, theme: true },
-    });
+    const [user, product] = await Promise.all([
+      db.user.findUnique({
+        where: { id: session.user.id },
+        select: { plan: true, theme: true },
+      }),
+      db.product.findFirst({
+        where: { userId: session.user.id },
+        select: { slug: true },
+      }),
+    ]);
     userPlan = user?.plan || "free";
     userTheme = user?.theme || "system";
+    productSlug = product?.slug ?? null;
   }
 
   const navItems = [
@@ -44,6 +56,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <LocaleSwitcher />
             </div>
           </div>
+          {productSlug && (
+            <a
+              href={`/changelog/${productSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs flex items-center gap-1 hover:underline mt-1.5"
+              style={{ color: "var(--text-weak)" }}
+            >
+              <ExternalLink size={11} />
+              {tDash("viewPublicPage")}
+            </a>
+          )}
         </div>
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => (

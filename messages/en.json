@@ -92,7 +92,8 @@
     "bulletPointsRequired": "Please enter your bullet points",
     "freePlan": "Free Plan",
     "soloPlan": "Solo Plan",
-    "proPlan": "Pro Plan"
+    "proPlan": "Pro Plan",
+    "viewPublicPage": "View public page"
   },
   "changelog": {
     "subscribe": "Subscribe for updates",
