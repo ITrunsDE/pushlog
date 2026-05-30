@@ -127,13 +127,15 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="flex justify-center my-4">
-            <Turnstile
-              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-              onSuccess={(token) => setTurnstileToken(token)}
-              onExpire={() => setTurnstileToken(null)}
-            />
-          </div>
+          {process.env.NODE_ENV === "production" && (
+            <div className="flex justify-center my-4">
+              <Turnstile
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+              />
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -143,7 +145,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={loading || !turnstileToken}
+            disabled={loading || (process.env.NODE_ENV === "production" && !turnstileToken)}
             className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition mt-6"
           >
             {loading ? t("creating") : t("register")}

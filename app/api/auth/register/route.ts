@@ -13,23 +13,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const verification = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: process.env.TURNSTILE_SECRET_KEY,
-          response: turnstileToken,
-        }),
-      }
-    );
-    const verifyResult = await verification.json();
-    if (!verifyResult.success) {
-      return NextResponse.json(
-        { error: "Captcha-Verifizierung fehlgeschlagen." },
-        { status: 400 }
+    if (process.env.NODE_ENV === "production") {
+      const verification = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            secret: process.env.TURNSTILE_SECRET_KEY,
+            response: turnstileToken,
+          }),
+        }
       );
+      const verifyResult = await verification.json();
+      if (!verifyResult.success) {
+        return NextResponse.json(
+          { error: "Captcha-Verifizierung fehlgeschlagen." },
+          { status: 400 }
+        );
+      }
     }
 
     if (password.length < 6) {

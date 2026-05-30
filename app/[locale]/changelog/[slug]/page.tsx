@@ -12,7 +12,7 @@ interface ChangelogPageProps {
   searchParams: Promise<{ confirmed?: string; unsubscribed?: string }>;
 }
 
-const builtInCategories = new Set(["New", "Fix", "Improved", "Removed"]);
+const builtInCategories = new Set(["feature", "fix", "improvement", "security", "performance"]);
 
 export default async function ChangelogPage({ params, searchParams }: ChangelogPageProps) {
   const t = await getTranslations("changelog");
