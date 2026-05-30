@@ -9,6 +9,7 @@ const intlMiddleware = createMiddleware({
   locales,
   defaultLocale,
   localePrefix: "as-needed",
+  localeDetection: false,
 });
 
 export default auth((req) => {

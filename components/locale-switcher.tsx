@@ -9,8 +9,6 @@ export function LocaleSwitcher() {
   const next = locale === "en" ? "de" : "en";
 
   function switchLocale() {
-    // Set NEXT_LOCALE cookie so next-intl prioritizes it over Accept-Language header
-    document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=31536000; SameSite=Lax`;
     window.location.href = next === "de" ? `/de${pathname}` : pathname;
   }
 
