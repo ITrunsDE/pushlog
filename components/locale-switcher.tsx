@@ -8,7 +8,12 @@ export function LocaleSwitcher() {
   const pathname = usePathname();
   const next = locale === "en" ? "de" : "en";
 
-  function switchLocale() {
+  async function switchLocale() {
+    await fetch("/api/locale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale: next }),
+    });
     window.location.href = next === "de" ? `/de${pathname}` : pathname;
   }
 
