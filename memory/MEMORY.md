@@ -1,0 +1,2 @@
+- [Sidebar Redesign 2026-05](sidebar_redesign_implementation.md) — Fixed sidebar, user block redesign, custom categories pro feature completed
+- [i18n Migration 2026-05](project_i18n_migration.md) — next-intl EN+DE migration; all routes under app/[locale], localePrefix as-needed
