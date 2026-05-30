@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import Link from "next/link";
+import { Link } from "@/lib/navigation";
 import { useState } from "react";
 
 interface PlanCTAButtonProps {

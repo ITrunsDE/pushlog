@@ -1,20 +1,16 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { usePathname } from "@/lib/navigation";
+import { usePathname, useRouter } from "@/lib/navigation";
 
 export function LocaleSwitcher() {
   const locale = useLocale();
   const pathname = usePathname();
-  const next = locale === "en" ? "de" : "en";
+  const router = useRouter();
 
-  async function switchLocale() {
-    await fetch("/api/locale", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ locale: next }),
-    });
-    window.location.href = next === "de" ? `/de${pathname}` : pathname;
+  function switchLocale() {
+    const nextLocale = locale === "en" ? "de" : "en";
+    router.replace(pathname, { locale: nextLocale });
   }
 
   return (
@@ -22,7 +18,7 @@ export function LocaleSwitcher() {
       onClick={switchLocale}
       className="text-xs text-[var(--primary)] hover:text-[var(--text-mid)] font-medium transition-colors"
     >
-      {next.toUpperCase()}
+      {locale === "en" ? "DE" : "EN"}
     </button>
   );
 }

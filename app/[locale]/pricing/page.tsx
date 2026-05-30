@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/lib/navigation";
 import { PlanCTAButton } from "./_components/plan-cta";
 
 const COMPARISON_ROWS: { label: string; free: string; solo: string; pro: string }[] = [
