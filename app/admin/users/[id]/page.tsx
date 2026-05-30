@@ -5,17 +5,10 @@ import { Divider } from '@/app/admin/_components/ui/divider'
 import { Badge } from '@/app/admin/_components/ui/badge'
 import { Avatar } from '@/app/admin/_components/ui/avatar'
 import { StatCard } from '@/app/admin/_components/stat-card'
-import { categoryBadgeClass } from '@/lib/badge-colors'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/app/admin/_components/ui/table'
 import { UserActions } from './_components/user-actions'
 import { SubscriberList } from './_components/subscriber-list'
+import { EntryList } from './_components/entry-list'
+import { ProductList } from './_components/product-list'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +57,7 @@ export default async function UserDetailPage({
     where: { product: { userId: id } },
     orderBy: { createdAt: 'desc' },
     take: 10,
-    include: { product: { select: { name: true } } },
+    include: { product: { select: { name: true } }, sections: true },
   })
 
   const subscribers = await db.subscriber.findMany({
@@ -127,80 +120,12 @@ export default async function UserDetailPage({
       {/* Products */}
       <Heading level={2} className="mt-10">Produkte</Heading>
       <Divider className="mt-4" />
-      <Table className="mt-4">
-        <TableHead>
-          <TableRow>
-            <TableHeader>Name</TableHeader>
-            <TableHeader>Slug</TableHeader>
-            <TableHeader>Einträge</TableHeader>
-            <TableHeader>Subscriber</TableHeader>
-            <TableHeader>Öffentlich</TableHeader>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {user.products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>{product.name}</TableCell>
-              <TableCell className="text-zinc-500">{product.slug}</TableCell>
-              <TableCell>{product._count.entries}</TableCell>
-              <TableCell>{product._count.subscribers}</TableCell>
-              <TableCell>
-                <a
-                  href={`/changelog/${product.slug}`}
-                  target="_blank"
-                  className="text-blue-600 text-sm hover:underline"
-                >
-                  Ansehen →
-                </a>
-              </TableCell>
-            </TableRow>
-          ))}
-          {user.products.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-zinc-500 py-4">
-                Keine Produkte.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <ProductList initialProducts={user.products} />
 
       {/* Recent Entries */}
       <Heading level={2} className="mt-10">Letzte Einträge</Heading>
       <Divider className="mt-4" />
-      <Table className="mt-4">
-        <TableHead>
-          <TableRow>
-            <TableHeader>Titel</TableHeader>
-            <TableHeader>Produkt</TableHeader>
-            <TableHeader>Kategorie</TableHeader>
-            <TableHeader>Veröffentlicht</TableHeader>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {recentEntries.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell>{entry.title}</TableCell>
-              <TableCell className="text-zinc-500">{entry.product.name}</TableCell>
-              <TableCell>
-                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${categoryBadgeClass(entry.category)}`}>
-                  {entry.category}
-                </span>
-              </TableCell>
-              <TableCell className="text-zinc-500">
-                {formatDate(entry.publishedAt)}
-              </TableCell>
-            </TableRow>
-          ))}
-          {recentEntries.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center text-zinc-500 py-4">
-                Keine Einträge.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <EntryList initialEntries={JSON.parse(JSON.stringify(recentEntries))} />
 
       {/* Subscribers */}
       <Heading level={2} className="mt-10">Subscriber</Heading>

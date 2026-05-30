@@ -97,22 +97,33 @@ model Product {
 }
 
 model ChangelogEntry {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   productId   String
   title       String
-  body        String   @db.Text
-  category    String
+  version     String?
   publishedAt DateTime?
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product  Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sections ChangelogSection[]
 
   @@index([productId])
   @@index([isPublished])
   @@index([publishedAt])
   @@map("changelog_entry")
+}
+
+model ChangelogSection {
+  id      String @id @default(cuid())
+  entryId String
+  type    String
+  items   String
+
+  entry ChangelogEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@map("changelog_section")
 }
 
 model Subscriber {

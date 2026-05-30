@@ -11,7 +11,6 @@ export async function GET(
     const { slug } = params;
     const url = new URL(request.url);
     const limitParam = url.searchParams.get("limit");
-    const categoryParam = url.searchParams.get("category");
 
     const product = await db.product.findFirst({
       where: { slug },
@@ -23,15 +22,20 @@ export async function GET(
           where: {
             isPublished: true,
             publishedAt: { not: null },
-            ...(categoryParam ? { category: categoryParam } : {}),
           },
           orderBy: { publishedAt: "desc" },
           select: {
             id: true,
             title: true,
-            body: true,
-            category: true,
+            version: true,
             publishedAt: true,
+            sections: {
+              select: {
+                id: true,
+                type: true,
+                items: true,
+              },
+            },
           },
         },
       },

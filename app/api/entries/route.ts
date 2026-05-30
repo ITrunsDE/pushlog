@@ -7,10 +7,15 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
+const sectionSchema = z.object({
+  type: z.string().min(1),
+  items: z.array(z.string()),
+});
+
 const createEntrySchema = z.object({
   title: z.string().min(1, "Title is required"),
-  body: z.string().min(1, "Body is required"),
-  category: z.string().min(1, "Category is required"),
+  version: z.string().nullable().optional(),
+  sections: z.array(sectionSchema).min(1, "At least one section is required"),
   productId: z.string().min(1, "Product ID is required"),
 });
 
@@ -56,12 +61,18 @@ export async function POST(request: NextRequest) {
     const entry = await db.changelogEntry.create({
       data: {
         title: validatedData.title,
-        body: validatedData.body,
-        category: validatedData.category,
+        version: validatedData.version || null,
         productId: validatedData.productId,
         isPublished: true,
         publishedAt: new Date(),
+        sections: {
+          create: validatedData.sections.map((s) => ({
+            type: s.type,
+            items: JSON.stringify(s.items.filter((i) => i.trim())),
+          })),
+        },
       },
+      include: { sections: true },
     });
 
     revalidatePath("/dashboard/widget");

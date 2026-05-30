@@ -21,7 +21,6 @@
   // Pro attributes
   const widgetStyle = script?.getAttribute("data-style") || "popup";
   const limit = parseInt(script?.getAttribute("data-limit") || "5", 10);
-  const category = script?.getAttribute("data-category") || null;
   const position = script?.getAttribute("data-position") || "bottom-right";
   const targetSelector = script?.getAttribute("data-target") || null;
 
@@ -38,6 +37,22 @@
     lightBg: "#fef9ee",
   };
 
+  const SECTION_COLORS = {
+    feature:     { bg: "#DBEAFE", text: "#1D4ED8" },
+    fix:         { bg: "#FEE2E2", text: "#B91C1C" },
+    improvement: { bg: "#FEF3C7", text: "#92400E" },
+    security:    { bg: "#DCFCE7", text: "#166534" },
+    performance: { bg: "#F3E8FF", text: "#7E22CE" },
+  };
+
+  const SECTION_LABELS = {
+    feature: "✨ Feature",
+    fix: "🐛 Fix",
+    improvement: "⚡ Improvement",
+    security: "🔒 Security",
+    performance: "🚀 Performance",
+  };
+
   let entries = [];
   let isOpen = false;
   let isPro = false;
@@ -46,10 +61,7 @@
   async function fetchEntries() {
     try {
       const fetchLimit = Math.min(limit, 10);
-      let url = `${API_BASE}/api/widget/${productSlug}?limit=${fetchLimit}`;
-      if (category) {
-        url += `&category=${encodeURIComponent(category)}`;
-      }
+      const url = `${API_BASE}/api/widget/${productSlug}?limit=${fetchLimit}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch entries");
       return await response.json();
@@ -86,10 +98,33 @@
     });
   }
 
-  // Truncate body to teaser
-  function getTeaser(body, maxLength = 100) {
-    if (body.length <= maxLength) return body;
-    return body.substring(0, maxLength).trim() + "...";
+  // HTML escape
+  function escapeHtml(text) {
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  }
+
+  // Build section HTML for an entry
+  function buildSectionsHtml(entry) {
+    return (entry.sections || []).map((section) => {
+      const colors = SECTION_COLORS[section.type] || { bg: "#F4F4F5", text: "#52525B" };
+      const label = SECTION_LABELS[section.type] || section.type;
+      let items = [];
+      try { items = JSON.parse(section.items); } catch {}
+      const itemsHtml = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+      return `
+        <div style="margin-bottom: 6px;">
+          <span class="pushlog-section-badge" style="background-color:${colors.bg};color:${colors.text}">${escapeHtml(label)}</span>
+          <ul class="pushlog-section-items">${itemsHtml}</ul>
+        </div>
+      `;
+    }).join("");
   }
 
   // Create and inject styles
@@ -244,34 +279,42 @@
         background-color: ${COLORS.lightBg};
       }
 
-      .pushlog-entry-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 6px;
-      }
-
-      .pushlog-entry-category {
-        font-size: 9px;
-        font-weight: 600;
-        padding: 3px 8px;
-        border-radius: 4px;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
       .pushlog-entry-title {
         font-size: 13px;
         font-weight: 600;
         color: ${COLORS.text};
-        margin: 0;
+        margin: 0 0 8px 0;
       }
 
-      .pushlog-entry-body {
-        font-size: 12px;
+      .pushlog-section-badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        margin-bottom: 4px;
+      }
+
+      .pushlog-section-items {
+        margin: 0 0 6px 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .pushlog-section-items li {
+        font-size: 11px;
         color: #633806;
-        margin: 6px 0 0 0;
         line-height: 1.4;
+        padding-left: 10px;
+        position: relative;
+      }
+
+      .pushlog-section-items li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
       }
 
       .pushlog-entry-date {
@@ -328,28 +371,11 @@
     }
 
     entries.forEach((entry) => {
-      const categoryColors = {
-        New: { bg: "#085041", text: "#9FE1CB" },
-        Fix: { bg: "#FAEEDA", text: "#633806" },
-        Improved: { bg: "#085041", text: "#9FE1CB" },
-        Removed: { bg: "#FFE4E1", text: "#8B0000" },
-      };
-
-      const colors = categoryColors[entry.category] || {
-        bg: "#F5F5F5",
-        text: "#666",
-      };
-
       const entryEl = document.createElement("div");
       entryEl.className = "pushlog-entry";
       entryEl.innerHTML = `
-        <div class="pushlog-entry-header">
-          <span class="pushlog-entry-category" style="background-color: ${colors.bg}; color: ${colors.text};">
-            ${entry.category}
-          </span>
-          <p class="pushlog-entry-title">${escapeHtml(entry.title)}</p>
-        </div>
-        <p class="pushlog-entry-body">${escapeHtml(getTeaser(entry.body))}</p>
+        <p class="pushlog-entry-title">${escapeHtml(entry.title)}${entry.version ? ` <span style="font-size:11px;font-weight:400;color:#854F0B">v${escapeHtml(entry.version)}</span>` : ""}</p>
+        ${buildSectionsHtml(entry)}
         <p class="pushlog-entry-date">${formatDate(entry.publishedAt)}</p>
       `;
       content.appendChild(entryEl);
@@ -385,28 +411,11 @@
         `;
       } else {
         entries.forEach((entry) => {
-          const categoryColors = {
-            New: { bg: "#085041", text: "#9FE1CB" },
-            Fix: { bg: "#FAEEDA", text: "#633806" },
-            Improved: { bg: "#085041", text: "#9FE1CB" },
-            Removed: { bg: "#FFE4E1", text: "#8B0000" },
-          };
-
-          const colors = categoryColors[entry.category] || {
-            bg: "#F5F5F5",
-            text: "#666",
-          };
-
           const entryEl = document.createElement("div");
           entryEl.className = "pushlog-entry";
           entryEl.innerHTML = `
-            <div class="pushlog-entry-header">
-              <span class="pushlog-entry-category" style="background-color: ${colors.bg}; color: ${colors.text};">
-                ${entry.category}
-              </span>
-              <p class="pushlog-entry-title">${escapeHtml(entry.title)}</p>
-            </div>
-            <p class="pushlog-entry-body">${escapeHtml(getTeaser(entry.body))}</p>
+            <p class="pushlog-entry-title">${escapeHtml(entry.title)}${entry.version ? ` <span style="font-size:11px;font-weight:400;color:#854F0B">v${escapeHtml(entry.version)}</span>` : ""}</p>
+            ${buildSectionsHtml(entry)}
             <p class="pushlog-entry-date">${formatDate(entry.publishedAt)}</p>
           `;
           list.appendChild(entryEl);
@@ -431,18 +440,6 @@
     });
 
     setTimeout(() => observer.disconnect(), 10000);
-  }
-
-  // HTML escape
-  function escapeHtml(text) {
-    const map = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;",
-    };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   // Toggle popup

@@ -61,12 +61,28 @@ export async function POST(request: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 500,
+      max_tokens: 800,
       messages: [
         {
           role: "system",
-          content:
-            "Du bist ein Changelog-Assistent. Wandle Bullet Points in einen klaren, freundlichen Changelog-Eintrag um. Antworte nur mit dem fertigen Text, keine Erklärungen, kein Markdown.",
+          content: `Du bist ein Changelog-Assistent. Analysiere die gegebenen Bullet Points und strukturiere sie in Sektionen.
+
+Antworte NUR mit validem JSON in diesem Format:
+{
+  "title": "Kurzer prägnanter Release-Titel",
+  "version": null,
+  "sections": [
+    {
+      "type": "feature",
+      "items": ["Item 1", "Item 2"]
+    }
+  ]
+}
+
+Erlaubte Typen: "feature", "fix", "improvement", "security", "performance"
+Nur Typen verwenden die auch Einträge haben.
+Leere Sektionen weglassen.
+Items als vollständige, lesbare Sätze formulieren.`,
         },
         {
           role: "user",
@@ -82,7 +98,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const result = response.choices[0]?.message?.content || "";
+    const raw = response.choices[0]?.message?.content || "{}";
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch {
+      return NextResponse.json(
+        { error: "KI-Verbesserung fehlgeschlagen" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ result });
   } catch (error) {

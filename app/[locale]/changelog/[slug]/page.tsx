@@ -12,8 +12,6 @@ interface ChangelogPageProps {
   searchParams: Promise<{ confirmed?: string; unsubscribed?: string }>;
 }
 
-const builtInCategories = new Set(["feature", "fix", "improvement", "security", "performance"]);
-
 export default async function ChangelogPage({ params, searchParams }: ChangelogPageProps) {
   const t = await getTranslations("changelog");
   const { slug } = await params;
@@ -26,15 +24,12 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
         select: {
           plan: true,
           locked: true,
-          customCategories: {
-            where: { deletedAt: null },
-            select: { id: true, name: true, label: true },
-          },
         },
       },
       entries: {
         where: { isPublished: true },
         orderBy: { publishedAt: "desc" },
+        include: { sections: true },
       },
     },
   });
@@ -43,11 +38,12 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
 
   if (product.user.locked) {
     return (
-      <div className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "var(--background)" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "var(--background)" }}
+      >
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-2"
-            style={{ color: "var(--text-dark)" }}>
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: "var(--text-dark)" }}>
             Nicht verfügbar
           </h1>
           <p style={{ color: "var(--text-mid)" }}>
@@ -55,15 +51,10 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   const plan = product.user.plan;
-  const isPro = canUseFeature(plan, "custom_categories");
-  const entries = isPro
-    ? product.entries
-    : product.entries.filter((e) => builtInCategories.has(e.category));
-  const customCategories = isPro ? product.user.customCategories : [];
   const showBranding = !canUseFeature(plan, "white_label");
 
   return (
@@ -107,7 +98,7 @@ export default async function ChangelogPage({ params, searchParams }: ChangelogP
           </div>
         )}
 
-        <EntriesList entries={entries} customCategories={customCategories} isPro={isPro} />
+        <EntriesList entries={product.entries} />
         <SubscribeForm slug={slug} ownerPlan={plan} />
       </div>
 

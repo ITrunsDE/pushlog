@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "@/lib/navigation";
 import { useTranslations, useLocale } from "next-intl";
 
-interface Category {
-  name: string;
-  label: string;
-  color: string;
-  locked?: boolean;
-}
+type Section = { type: string; items: string[] };
 
 interface UserInfo {
   plan: string;
@@ -16,21 +12,47 @@ interface UserInfo {
   aiLimit: number | null;
 }
 
+interface CustomCategory {
+  id: string;
+  name: string;
+  label: string;
+}
+
+const STANDARD_TYPES = [
+  { value: "feature", label: "✨ Feature" },
+  { value: "fix", label: "🐛 Fix" },
+  { value: "improvement", label: "⚡ Improvement" },
+  { value: "security", label: "🔒 Security" },
+  { value: "performance", label: "🚀 Performance" },
+];
+
+const SECTION_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  feature:     { label: "Features",     icon: "✨", color: "bg-blue-100 text-blue-700" },
+  fix:         { label: "Fixes",        icon: "🐛", color: "bg-red-100 text-red-700" },
+  improvement: { label: "Improvements", icon: "⚡", color: "bg-amber-100 text-amber-700" },
+  security:    { label: "Security",     icon: "🔒", color: "bg-green-100 text-green-700" },
+  performance: { label: "Performance",  icon: "🚀", color: "bg-purple-100 text-purple-700" },
+};
+
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const locale = useLocale();
-  const [bullets, setBullets] = useState("");
-  const [improved, setImproved] = useState("");
+  const router = useRouter();
+
+  const [bulletPoints, setBulletPoints] = useState("");
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<string>("");
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [version, setVersion] = useState("");
+  const [sections, setSections] = useState<Section[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [limitBanner, setLimitBanner] = useState<"entry_limit_reached" | "ai_limit_reached" | null>(null);
+
+  const isPro = userInfo?.plan === "pro";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,31 +63,29 @@ export default function DashboardPage() {
           fetch("/api/user/me"),
         ]);
 
-        if (!productsRes.ok) throw new Error(t("loadingError"));
-        const productData = (await productsRes.json()) as Array<{ id: string }>;
-        if (productData.length > 0) setProductId(productData[0].id);
+        if (productsRes.ok) {
+          const productData = (await productsRes.json()) as Array<{ id: string }>;
+          if (productData.length > 0) setProductId(productData[0].id);
+        }
 
-        if (!categoriesRes.ok) throw new Error(t("loadingError"));
-        const categoryData = (await categoriesRes.json()) as Category[];
-        const available = categoryData.filter((cat) => !cat.locked);
-        setCategories(available);
-        if (available.length > 0) setCategory(available[0].name);
+        if (categoriesRes.ok) {
+          const catData = await categoriesRes.json();
+          setCustomCategories(catData.filter((c: { isCustom?: boolean; locked?: boolean }) => c.isCustom && !c.locked));
+        }
 
         if (userRes.ok) setUserInfo(await userRes.json());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("loadingError"));
+      } catch {
+        setError(t("loadingError"));
       }
     };
-
     fetchData();
   }, [t]);
 
-  const handleImprove = async () => {
-    if (!bullets.trim()) {
+  const handleStructureWithAI = async () => {
+    if (!bulletPoints.trim()) {
       setError(t("bulletPointsRequired"));
       return;
     }
-
     setLoadingAI(true);
     setError(null);
     setLimitBanner(null);
@@ -74,7 +94,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/ai/improve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bullets }),
+        body: JSON.stringify({ bullets: bulletPoints }),
       });
 
       if (res.status === 403) {
@@ -89,7 +109,11 @@ export default function DashboardPage() {
 
       if (!res.ok) throw new Error(t("loadingError"));
       const data = await res.json();
-      setImproved(data.result);
+      const aiResult = data.result;
+
+      if (aiResult.title) setTitle(aiResult.title);
+      if (aiResult.version) setVersion(aiResult.version || "");
+      if (Array.isArray(aiResult.sections)) setSections(aiResult.sections);
 
       const userRes = await fetch("/api/user/me");
       if (userRes.ok) setUserInfo(await userRes.json());
@@ -100,9 +124,47 @@ export default function DashboardPage() {
     }
   };
 
+  const addSection = () =>
+    setSections((prev) => [...prev, { type: "feature", items: [""] }]);
+
+  const removeSection = (i: number) =>
+    setSections((prev) => prev.filter((_, idx) => idx !== i));
+
+  const updateSectionType = (i: number, type: string) =>
+    setSections((prev) =>
+      prev.map((s, idx) => (idx === i ? { ...s, type } : s))
+    );
+
+  const addItem = (i: number) =>
+    setSections((prev) =>
+      prev.map((s, idx) => (idx === i ? { ...s, items: [...s.items, ""] } : s))
+    );
+
+  const updateItem = (i: number, j: number, value: string) =>
+    setSections((prev) =>
+      prev.map((s, idx) =>
+        idx === i
+          ? { ...s, items: s.items.map((item, jdx) => (jdx === j ? value : item)) }
+          : s
+      )
+    );
+
+  const removeItem = (i: number, j: number) =>
+    setSections((prev) =>
+      prev.map((s, idx) =>
+        idx === i ? { ...s, items: s.items.filter((_, jdx) => jdx !== j) } : s
+      )
+    );
+
   const handlePublish = async () => {
-    if (!improved.trim() || !title.trim()) {
+    if (!title.trim()) {
       setError(t("titleAndEntryRequired"));
+      return;
+    }
+
+    const validSections = sections.filter((s) => s.items.some((i) => i.trim()));
+    if (validSections.length === 0) {
+      setError("Mindestens eine Sektion mit Inhalt erforderlich");
       return;
     }
 
@@ -120,7 +182,15 @@ export default function DashboardPage() {
       const res = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body: improved, category, productId }),
+        body: JSON.stringify({
+          title,
+          version: version || null,
+          sections: validSections.map((s) => ({
+            ...s,
+            items: s.items.filter((i) => i.trim()),
+          })),
+          productId,
+        }),
       });
 
       if (res.status === 403) {
@@ -134,14 +204,8 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error(t("loadingError"));
 
       setSuccess(t("publishSuccess"));
-
-      setTimeout(() => {
-        setBullets("");
-        setImproved("");
-        setTitle("");
-        setCategory("New");
-        setSuccess(null);
-      }, 2000);
+      router.refresh();
+      router.push("/dashboard/entries");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("loadingError"));
     } finally {
@@ -156,6 +220,15 @@ export default function DashboardPage() {
       month: "long",
     });
   })();
+
+  const aiLimitReached =
+    userInfo?.plan === "free" &&
+    userInfo.aiLimit !== null &&
+    userInfo.aiUsed >= userInfo.aiLimit;
+  const canPublish =
+    !!title.trim() &&
+    sections.some((s) => s.items.some((i) => i.trim())) &&
+    !!productId;
 
   return (
     <div className="flex min-h-screen">
@@ -187,57 +260,37 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
             {t("bulletPoints")}
           </label>
           <textarea
-            value={bullets}
-            onChange={(e) => setBullets(e.target.value)}
-            placeholder={`- Login-Fehler bei langen E-Mail-Adressen behoben\n- Performance des Widgets um 40% verbessert\n- Neues Kategorie-System eingeführt`}
-            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none min-h-[200px]"
+            value={bulletPoints}
+            onChange={(e) => setBulletPoints(e.target.value)}
+            placeholder={`- Login-Fehler bei langen E-Mail-Adressen behoben\n- Performance des Widgets verbessert\n- Neues Kategorie-System eingeführt`}
+            className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none min-h-[120px]"
           />
         </div>
 
-        <div className="mb-6">
-          {(() => {
-            const aiLimitReached = userInfo?.plan === "free" && userInfo.aiLimit !== null && userInfo.aiUsed >= userInfo.aiLimit;
-            return (
-              <>
-                <button
-                  onClick={handleImprove}
-                  disabled={loadingAI || !!aiLimitReached}
-                  title={aiLimitReached ? `KI-Limit erreicht. Resets am ${nextMonthFirst}.` : undefined}
-                  className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
-                >
-                  {loadingAI ? t("improving") : t("aiGenerate")}
-                </button>
-                {userInfo?.plan === "free" && (
-                  <p className="text-xs text-[var(--text-mid)] mt-1.5 text-right">
-                    {t("aiLimit", { used: userInfo.aiUsed, max: userInfo.aiLimit ?? 0 })}
-                  </p>
-                )}
-              </>
-            );
-          })()}
+        <div className="mb-8">
+          <button
+            onClick={handleStructureWithAI}
+            disabled={loadingAI || !!aiLimitReached}
+            title={aiLimitReached ? `KI-Limit erreicht. Resets am ${nextMonthFirst}.` : undefined}
+            className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
+          >
+            {loadingAI ? t("improving") : t("aiGenerate")}
+          </button>
+          {userInfo?.plan === "free" && (
+            <p className="text-xs text-[var(--text-mid)] mt-1.5 text-right">
+              {t("aiLimit", { used: userInfo.aiUsed, max: userInfo.aiLimit ?? 0 })}
+            </p>
+          )}
         </div>
-
-        {improved && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
-              {t("aiResult")}
-            </label>
-            <textarea
-              value={improved}
-              onChange={(e) => setImproved(e.target.value)}
-              className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none min-h-[200px]"
-            />
-          </div>
-        )}
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
-            {t("titleLabel")}
+            {t("titleLabel")} *
           </label>
           <input
             type="text"
@@ -248,21 +301,87 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-8">
           <label className="block text-sm font-medium text-[var(--text-dark)] mb-2">
-            {t("category")}
+            Version (optional)
           </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-          >
-            {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.label}
-              </option>
+          <input
+            type="text"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            placeholder="z.B. 2.1.0"
+            className="w-full px-4 py-2 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-[var(--text-dark)] mb-3">
+            Sektionen
+          </label>
+          <div className="space-y-4">
+            {sections.map((section, i) => (
+              <div
+                key={i}
+                className="p-4 bg-[var(--surface)] border border-[var(--border-soft)] rounded-lg"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <select
+                    value={section.type}
+                    onChange={(e) => updateSectionType(i, e.target.value)}
+                    className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  >
+                    {STANDARD_TYPES.map((st) => (
+                      <option key={st.value} value={st.value}>
+                        {st.label}
+                      </option>
+                    ))}
+                    {isPro &&
+                      customCategories.map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.label}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={() => removeSection(i)}
+                    className="ml-auto text-xs text-red-500 hover:text-red-700 transition"
+                  >
+                    Sektion entfernen
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {section.items.map((item, j) => (
+                    <div key={j} className="flex gap-2">
+                      <input
+                        value={item}
+                        onChange={(e) => updateItem(i, j, e.target.value)}
+                        placeholder="Item beschreiben..."
+                        className="flex-1 px-3 py-1.5 bg-[var(--background)] border border-[var(--border-soft)] rounded-lg text-[var(--text-dark)] text-sm placeholder-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                      />
+                      <button
+                        onClick={() => removeItem(i, j)}
+                        className="text-[var(--text-mid)] hover:text-red-500 transition text-lg leading-none px-1"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => addItem(i)}
+                  className="mt-2 text-xs text-[var(--primary)] hover:text-[var(--text-mid)] transition"
+                >
+                  + Item
+                </button>
+              </div>
             ))}
-          </select>
+          </div>
+          <button
+            onClick={addSection}
+            className="mt-3 w-full py-2 border border-dashed border-[var(--border-soft)] rounded-lg text-sm text-[var(--text-mid)] hover:text-[var(--text-dark)] hover:border-[var(--primary)] transition"
+          >
+            + Sektion hinzufügen
+          </button>
         </div>
 
         {error && (
@@ -270,7 +389,6 @@ export default function DashboardPage() {
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
-
         {success && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-6">
             <p className="text-sm text-green-700">{success}</p>
@@ -279,7 +397,7 @@ export default function DashboardPage() {
 
         <button
           onClick={handlePublish}
-          disabled={publishing || !improved || !title || !productId}
+          disabled={publishing || !canPublish}
           className="w-full bg-[var(--primary)] hover:bg-[var(--text-mid)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition"
         >
           {publishing ? t("publishing") : t("publish")}
@@ -291,34 +409,50 @@ export default function DashboardPage() {
           {t("preview")}
         </p>
 
-        {title && improved && (
+        {title || sections.length > 0 ? (
           <div className="bg-[var(--background)] border border-[var(--border-soft)] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              {(() => {
-                const selectedCategory = categories.find((cat) => cat.name === category);
-                return selectedCategory ? (
-                  <span
-                    className="text-[10px] font-medium px-2.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: selectedCategory.color, color: "#fff" }}
-                  >
-                    {selectedCategory.label}
-                  </span>
-                ) : null;
-              })()}
-              <span className="text-sm font-medium text-[var(--text-dark)]">{title}</span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium text-[var(--text-dark)]">
+                {title || "..."}
+              </span>
+              {version && (
+                <span className="text-xs text-[var(--text-mid)]">v{version}</span>
+              )}
             </div>
-            <p className="text-xs text-[var(--text-mid)] leading-relaxed whitespace-pre-wrap">{improved}</p>
-            <p className="text-[11px] text-[var(--primary)] mt-3">
+            <p className="text-[11px] text-[var(--primary)] mb-4">
               {new Date().toLocaleDateString(locale, {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
               })}
             </p>
+            {sections.map((section, i) => {
+              const config = SECTION_CONFIG[section.type] ?? {
+                label: section.type,
+                icon: "•",
+                color: "bg-zinc-100 text-zinc-700",
+              };
+              const items = section.items.filter((item) => item.trim());
+              if (items.length === 0) return null;
+              return (
+                <div key={i} className="mb-3">
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full mb-1.5 ${config.color}`}
+                  >
+                    {config.icon} {config.label}
+                  </span>
+                  <ul className="space-y-0.5">
+                    {items.map((item, j) => (
+                      <li key={j} className="text-xs text-[var(--text-dark)] pl-3">
+                        • {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
-        )}
-
-        {(!title || !improved) && (
+        ) : (
           <div className="text-center text-[var(--text-mid)] text-sm">
             <p>{t("fillPreview")}</p>
           </div>

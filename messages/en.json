@@ -49,7 +49,7 @@
     "settings": "Settings",
     "upgrade": "Upgrade",
     "widget": "Widget",
-    "aiGenerate": "Improve with AI ✶",
+    "aiGenerate": "Structure with AI ✦",
     "aiLimit": "{used} / {max} AI generations used this month",
     "entryLimit": "You've reached the 25 entry limit on the Free plan.",
     "subscriberLimit": "You're at {current}/{max} subscribers.",

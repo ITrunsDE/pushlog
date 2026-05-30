@@ -57,10 +57,11 @@ export async function POST(req: NextRequest) {
         productId: subscriber.productId,
         isPublished: true,
         publishedAt: {
-          gt: lastSent || new Date(0), // All entries if never sent
+          gt: lastSent || new Date(0),
         },
       },
       orderBy: { publishedAt: "desc" },
+      include: { sections: true },
     });
 
     if (entries.length === 0) {
@@ -116,17 +117,24 @@ function generateDigestEmail(
     year: "numeric",
   });
 
-  const categoryColors: Record<string, { bg: string; text: string }> = {
-    New: { bg: "#085041", text: "#9FE1CB" },
-    Fix: { bg: "#FAEEDA", text: "#633806" },
-    Improved: { bg: "#085041", text: "#9FE1CB" },
-    Removed: { bg: "#FFE4E1", text: "#8B0000" },
+  const sectionColors: Record<string, { bg: string; text: string }> = {
+    feature:     { bg: "#DBEAFE", text: "#1D4ED8" },
+    fix:         { bg: "#FEE2E2", text: "#B91C1C" },
+    improvement: { bg: "#FEF3C7", text: "#92400E" },
+    security:    { bg: "#DCFCE7", text: "#166534" },
+    performance: { bg: "#F3E8FF", text: "#7E22CE" },
+  };
+
+  const sectionLabels: Record<string, string> = {
+    feature: "✨ Feature",
+    fix: "🐛 Fix",
+    improvement: "⚡ Improvement",
+    security: "🔒 Security",
+    performance: "🚀 Performance",
   };
 
   const entriesHtml = entries
     .map((entry) => {
-      const color =
-        categoryColors[entry.category] || { bg: "#000", text: "#fff" };
       const dateStr = entry.publishedAt
         ? new Date(entry.publishedAt).toLocaleDateString("de-DE", {
             year: "numeric",
@@ -135,26 +143,34 @@ function generateDigestEmail(
           })
         : "Kein Datum";
 
-      // Truncate body to 200 chars
-      const bodyPreview =
-        entry.body.length > 200 ? entry.body.substring(0, 200) + "..." : entry.body;
+      const sectionsHtml = entry.sections
+        .map((section: { type: string; items: string }) => {
+          const color = sectionColors[section.type] || { bg: "#F4F4F5", text: "#52525B" };
+          const label = sectionLabels[section.type] || section.type;
+          const items: string[] = JSON.parse(section.items);
+          const itemsHtml = items
+            .map((item) => `<li style="margin: 4px 0; color: #412402; font-size: 14px;">${item}</li>`)
+            .join("");
+          return `
+            <div style="margin-bottom: 12px;">
+              <span style="display: inline-block; background-color: ${color.bg}; color: ${color.text}; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; margin-bottom: 6px;">
+                ${label}
+              </span>
+              <ul style="margin: 0; padding-left: 20px;">
+                ${itemsHtml}
+              </ul>
+            </div>
+          `;
+        })
+        .join("");
 
       return `
         <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #FAC775;">
-          <div style="margin-bottom: 12px;">
-            <span style="display: inline-block; background-color: ${color.bg}; color: ${color.text}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">
-              ${entry.category}
-            </span>
-          </div>
-          <h3 style="color: #412402; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;">
-            ${entry.title}
+          <h3 style="color: #412402; font-size: 18px; margin: 0 0 4px 0; font-weight: 600;">
+            ${entry.title}${entry.version ? ` <span style="font-size: 13px; font-weight: 400; color: #854F0B;">v${entry.version}</span>` : ""}
           </h3>
-          <p style="color: #633806; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; white-space: pre-wrap;">
-            ${bodyPreview}
-          </p>
-          <p style="color: #BA7517; font-size: 12px; margin: 0;">
-            ${dateStr}
-          </p>
+          <p style="color: #BA7517; font-size: 12px; margin: 0 0 12px 0;">${dateStr}</p>
+          ${sectionsHtml}
         </div>
       `;
     })

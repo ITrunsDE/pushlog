@@ -4,6 +4,15 @@ import { redirect } from "next/navigation";
 import { Link } from "@/lib/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { categoryBadgeClass } from "@/lib/badge-colors";
+import { DeleteEntryButton } from "./_components/delete-entry-button";
+
+const SECTION_LABELS: Record<string, string> = {
+  feature: "Feature",
+  fix: "Fix",
+  improvement: "Improvement",
+  security: "Security",
+  performance: "Performance",
+};
 
 export default async function EntriesPage() {
   const t = await getTranslations("dashboard");
@@ -17,6 +26,7 @@ export default async function EntriesPage() {
       entries: {
         where: { isPublished: true },
         orderBy: { publishedAt: "desc" },
+        include: { sections: true },
       },
     },
   });
@@ -36,7 +46,9 @@ export default async function EntriesPage() {
         <div className="space-y-8">
           {products.map((product) => (
             <div key={product.id}>
-              <h2 className="text-xl font-medium text-[var(--text-dark)] mb-4">{product.name}</h2>
+              <h2 className="text-xl font-medium text-[var(--text-dark)] mb-4">
+                {product.name}
+              </h2>
 
               {product.entries.length === 0 ? (
                 <p className="text-[var(--text-mid)]">{t("noPublishedEntries")}</p>
@@ -46,27 +58,42 @@ export default async function EntriesPage() {
                     <div
                       key={entry.id}
                       className="rounded-lg p-4 border"
-                      style={{ backgroundColor: "var(--surface)", borderColor: "var(--border-soft)" }}
+                      style={{
+                        backgroundColor: "var(--surface)",
+                        borderColor: "var(--border-soft)",
+                      }}
                     >
-                      <div className="flex items-center gap-2 mb-2 justify-between">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${categoryBadgeClass(entry.category)}`}
-                          >
-                            {entry.category}
-                          </span>
-                          <h3 className="text-sm font-medium text-[var(--text-dark)]">{entry.title}</h3>
+                      <div className="flex items-start gap-2 mb-2 justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {entry.sections.map((s) => (
+                              <span
+                                key={s.id}
+                                className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${categoryBadgeClass(s.type)}`}
+                              >
+                                {SECTION_LABELS[s.type] ?? s.type}
+                              </span>
+                            ))}
+                          </div>
+                          <h3 className="text-sm font-medium text-[var(--text-dark)]">
+                            {entry.title}
+                            {entry.version && (
+                              <span className="ml-1.5 text-xs font-normal text-[var(--text-mid)]">
+                                v{entry.version}
+                              </span>
+                            )}
+                          </h3>
                         </div>
-                        <Link
-                          href={`/dashboard/entries/${entry.id}/edit`}
-                          className="text-xs font-medium text-[var(--primary)] hover:text-[var(--text-mid)] transition whitespace-nowrap ml-2"
-                        >
-                          {t("edit")}
-                        </Link>
+                        <div className="flex items-center gap-3 ml-2">
+                          <Link
+                            href={`/dashboard/entries/${entry.id}/edit`}
+                            className="text-xs font-medium text-[var(--primary)] hover:text-[var(--text-mid)] transition whitespace-nowrap"
+                          >
+                            {t("edit")}
+                          </Link>
+                          <DeleteEntryButton id={entry.id} />
+                        </div>
                       </div>
-                      <p className="text-xs text-[var(--text-mid)] leading-relaxed mb-2 whitespace-pre-wrap">
-                        {entry.body}
-                      </p>
                       <p className="text-xs text-[var(--primary)]">
                         {entry.publishedAt
                           ? new Date(entry.publishedAt).toLocaleDateString(locale, {
