@@ -70,7 +70,7 @@ export default async function SettingsPage({
       <h1 className="text-3xl font-medium text-[var(--text-dark)] font-[family-name:var(--font-display)] mb-2">
         Einstellungen
       </h1>
-      <p className="text-[var(--text-mid)] mb-8">Widget-Code & Produkteinstellungen</p>
+      <p className="text-[var(--text-mid)] mb-8">Verwalte dein Produkt und deinen Account</p>
 
       <SettingsTabs tabs={tabs} defaultTab={params.tab ?? "produkt"} />
     </div>
