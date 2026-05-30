@@ -1,5 +1,36 @@
-export { auth as middleware } from "@/lib/auth";
+import createMiddleware from "next-intl/middleware";
+import { auth } from "@/lib/auth";
+
+const locales = ["en", "de"] as const;
+const defaultLocale = "en";
+
+const intlMiddleware = createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: "as-needed",
+});
+
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+  const isLoggedIn = !!req.auth;
+
+  // Handle locale-prefixed routes for non-default locales
+  for (const locale of locales) {
+    if (locale === defaultLocale) continue;
+    if (pathname.startsWith(`/${locale}/dashboard`) && !isLoggedIn) {
+      return Response.redirect(new URL(`/${locale}/login`, req.nextUrl));
+    }
+    if (
+      ["/login", "/register"].some((p) => pathname.startsWith(`/${locale}${p}`)) &&
+      isLoggedIn
+    ) {
+      return Response.redirect(new URL(`/${locale}/dashboard`, req.nextUrl));
+    }
+  }
+
+  return intlMiddleware(req);
+});
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };
